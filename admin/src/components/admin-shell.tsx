@@ -26,16 +26,19 @@ export function AdminShell() {
       padding="lg"
       styles={{
         main: {
-          backgroundColor: '#f5f6f8',
+          background:
+            'radial-gradient(circle at top right, rgba(201,154,73,0.14), transparent 22%), linear-gradient(180deg, #f7f2e8 0%, #f3f4f6 100%)',
           minHeight: '100vh',
         },
         navbar: {
-          backgroundColor: '#ffffff',
-          borderRight: '1px solid #d9dee7',
+          background:
+            'linear-gradient(180deg, #16120d 0%, #221a10 100%)',
+          borderRight: '1px solid #4a3820',
         },
         header: {
-          backgroundColor: '#ffffff',
-          borderBottom: '1px solid #d9dee7',
+          background: 'rgba(255,255,255,0.92)',
+          borderBottom: '1px solid #e4d3ab',
+          backdropFilter: 'blur(10px)',
         },
       }}
     >
@@ -75,11 +78,11 @@ export function AdminShell() {
 
       <AppShell.Navbar p={0}>
         <Stack gap={0} style={{ height: '100%' }}>
-          <Box px="md" py="sm" style={{ borderBottom: '1px solid #d9dee7', flexShrink: 0 }}>
-            <Text fw={700} size="lg" c="dark">
+          <Box px="md" py="sm" style={{ borderBottom: '1px solid #4a3820', flexShrink: 0 }}>
+            <Text fw={800} size="lg" c="#f2d18b">
               SEU Study
             </Text>
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="#d7c39d">
               Admin console
             </Text>
           </Box>
@@ -100,10 +103,17 @@ export function AdminShell() {
                     to={item.path}
                     justify="flex-start"
                     variant={isActive ? 'filled' : 'subtle'}
-                    color={isActive ? 'dark' : 'gray'}
+                    color={isActive ? 'yellow' : 'gray'}
                     size="sm"
                     px="sm"
-                    style={{ minHeight: 38, fontWeight: 500 }}
+                    style={{
+                      minHeight: 40,
+                      fontWeight: 600,
+                      color: isActive ? '#16120d' : '#f3e5c6',
+                      background: isActive
+                        ? 'linear-gradient(180deg, #e5c176 0%, #c89a3f 100%)'
+                        : 'transparent',
+                    }}
                   >
                     {item.label}
                   </Button>

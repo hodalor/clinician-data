@@ -97,12 +97,29 @@ export interface RecordListItem {
   study_id: string;
   status: string;
   extractor_id?: string;
+  mode?: string;
+  version?: number;
   updated_at?: string;
   created_at?: string;
+  eligibility?: Record<string, unknown>;
+  patient?: Record<string, unknown>;
+  sats?: Record<string, unknown>;
+  physiology?: Record<string, unknown>;
+  presentation?: Record<string, unknown>;
+  process?: Record<string, unknown>;
+  outcomes?: Record<string, unknown>;
   data_quality?: {
     reviewer_id?: string;
     qc_comment?: string;
+    qc_required?: boolean;
+    [key: string]: unknown;
   };
+  duplicate_flags?: Array<{
+    matched_record_id?: string;
+    basis: string[];
+    resolved: boolean;
+  }>;
+  [key: string]: unknown;
 }
 
 export interface RecordListResponse {

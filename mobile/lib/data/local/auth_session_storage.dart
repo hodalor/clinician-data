@@ -25,7 +25,12 @@ class AuthSessionStorage {
       return null;
     }
 
-    return AuthSession.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    try {
+      return AuthSession.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } on FormatException {
+      await clearSession();
+      return null;
+    }
   }
 
   Future<void> writeSession(AuthSession session) {

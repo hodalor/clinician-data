@@ -60,7 +60,9 @@ export function RecordsPage() {
       columns={[
         { key: 'studyId', label: 'Study ID' },
         { key: 'status', label: 'Status' },
+        { key: 'mode', label: 'Mode' },
         { key: 'extractor', label: 'Research assistant' },
+        { key: 'qcComment', label: 'QC comment' },
         { key: 'updatedAt', label: 'Last updated' },
         { key: 'actions', label: 'Actions' },
       ]}
@@ -69,9 +71,11 @@ export function RecordsPage() {
         values: {
           studyId: record.study_id,
           status: record.status,
+          mode: record.mode ?? 'Not set',
           extractor: record.extractor_id
             ? (raNameById.get(record.extractor_id) ?? record.extractor_id)
             : 'Not assigned',
+          qcComment: record.data_quality?.qc_comment ?? 'No comment',
           updatedAt: record.updated_at
             ? new Date(record.updated_at).toLocaleString()
             : 'Not available',
@@ -82,6 +86,7 @@ export function RecordsPage() {
           ),
         },
       }))}
+      tableMinWidth={1240}
       emptyMessage={isLoading ? 'Loading records...' : 'No records matched these filters.'}
       filterSlot={
         <Group align="end" wrap="wrap">

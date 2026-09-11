@@ -26,3 +26,11 @@ export function getRecordAuditHistory(id: string) {
     withAuth: true,
   });
 }
+
+export function reopenRecord(id: string, reason: string) {
+  return requestJson<{ record: RecordListItem }>(`/records/${id}/reopen`, {
+    method: 'POST',
+    body: { reason },
+    withAuth: true,
+  });
+}

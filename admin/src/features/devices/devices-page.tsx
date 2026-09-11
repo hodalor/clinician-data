@@ -143,10 +143,17 @@ export function DevicesPage() {
           { key: 'lastSeen', label: 'Last seen' },
           { key: 'actions', label: 'Actions' },
         ]}
-        rows={devices.map((device) => ({
+        rows={devices.map((device, index) => ({
           id: device.id,
           values: {
-            deviceId: device.device_id,
+            deviceId: (
+              <Stack gap={2}>
+                <Text fw={500}>{formatDeviceLabel(index)}</Text>
+                <Text size="sm" c="dimmed">
+                  {device.device_id}
+                </Text>
+              </Stack>
+            ),
             user: device.user_name,
             authorised: device.authorised ? 'Yes' : 'No',
             lastSeen: device.last_seen_at
@@ -176,4 +183,8 @@ export function DevicesPage() {
       />
     </Stack>
   );
+}
+
+function formatDeviceLabel(index: number) {
+  return `D${String(index + 1).padStart(5, '0')}`;
 }

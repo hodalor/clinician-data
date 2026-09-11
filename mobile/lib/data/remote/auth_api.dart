@@ -29,28 +29,39 @@ class AuthApi {
     );
 
     final data = response.data ?? <String, dynamic>{};
-    final status = data['status'];
+    final status = _readOptionalString(data['status']);
 
     if (status == 'pending_approval') {
       return AuthLoginResult.pendingApproval(
-        requestId: data['request_id'] as String?,
-        message: data['message'] as String?,
+        requestId: _readOptionalString(data['request_id']),
+        message: _readOptionalString(data['message']),
       );
     }
 
     if (status == 'rejected') {
       return AuthLoginResult.rejected(
-        requestId: data['request_id'] as String?,
-        message: data['message'] as String?,
+        requestId: _readOptionalString(data['request_id']),
+        message: _readOptionalString(data['message']),
       );
+    }
+
+    final accessToken = _readOptionalString(data['access_token']);
+    final refreshToken = _readOptionalString(data['refresh_token']);
+    final userJson = data['user'];
+
+    if (accessToken == null || refreshToken == null || userJson is! Map) {
+      final message =
+          _readOptionalString(data['message']) ??
+          'Login response was missing the expected authentication data.';
+      throw FormatException(message);
     }
 
     return AuthLoginResult.authenticated(
       AuthSession(
-        accessToken: data['access_token'] as String,
-        refreshToken: data['refresh_token'] as String,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
         deviceId: deviceId,
-        user: AuthUser.fromJson(data['user'] as Map<String, dynamic>),
+        user: AuthUser.fromJson(Map<String, dynamic>.from(userJson)),
       ),
     );
   }
@@ -85,9 +96,18 @@ class AuthApi {
     );
 
     final data = response.data ?? <String, dynamic>{};
+    final accessToken = _readOptionalString(data['access_token']);
+    final refreshTokenValue = _readOptionalString(data['refresh_token']);
+
+    if (accessToken == null || refreshTokenValue == null) {
+      throw const FormatException(
+        'Refresh response was missing authentication tokens.',
+      );
+    }
+
     return AuthSession(
-      accessToken: data['access_token'] as String,
-      refreshToken: data['refresh_token'] as String,
+      accessToken: accessToken,
+      refreshToken: refreshTokenValue,
       deviceId: deviceId,
       user: user,
     );
@@ -102,5 +122,14 @@ class AuthApi {
         'refresh_token': refreshToken,
       },
     );
+  }
+
+  String? _readOptionalString(Object? value) {
+    if (value is! String) {
+      return null;
+    }
+
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 }

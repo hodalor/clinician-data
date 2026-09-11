@@ -291,14 +291,13 @@ class AppDatabase extends _$AppDatabase {
 
 LazyDatabase _openConnection(DatabaseKeyService keyService) {
   return LazyDatabase(() async {
-    _configureSqlCipher();
-
     final dbKey = await keyService.readOrCreateDatabaseKey();
     final appDir = await getApplicationDocumentsDirectory();
     final file = File(p.join(appDir.path, 'seu_mobile_encrypted.db'));
 
     return NativeDatabase.createInBackground(
       file,
+      isolateSetup: _configureSqlCipher,
       setup: (database) {
         database.execute('PRAGMA key = "x\'$dbKey\'";');
         database.execute('PRAGMA foreign_keys = ON;');

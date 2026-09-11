@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Group,
   Paper,
@@ -32,6 +33,7 @@ interface ListPageLayoutProps {
   rows: TableRow[];
   filterSlot?: ReactNode;
   emptyMessage?: string;
+  tableMinWidth?: number;
 }
 
 export function ListPageLayout({
@@ -41,6 +43,7 @@ export function ListPageLayout({
   rows,
   filterSlot,
   emptyMessage = 'No rows to show yet.',
+  tableMinWidth = 980,
 }: ListPageLayoutProps) {
   return (
     <Stack gap="md">
@@ -50,22 +53,61 @@ export function ListPageLayout({
         </Title>
         <Group gap="lg">
           {summaryItems.map((item) => (
-            <Text key={item.label} size="sm" c="dimmed">
-              <Text component="span" inherit fw={600} c="dark">
+            <Paper
+              key={item.label}
+              withBorder
+              radius="md"
+              px="md"
+              py="sm"
+              style={{
+                minWidth: 120,
+                background:
+                  'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,240,226,0.95))',
+                borderColor: '#e4d3ab',
+              }}
+            >
+              <Text size="xs" tt="uppercase" fw={700} c="#8b6b2c">
+                {item.label}
+              </Text>
+              <Text fw={700} size="xl" c="#1b1b1b">
                 {item.value}
-              </Text>{' '}
-              {item.label}
-            </Text>
+              </Text>
+            </Paper>
           ))}
         </Group>
       </Stack>
 
-      <Paper withBorder radius="md" p="md">
+      <Paper
+        withBorder
+        radius="md"
+        p="md"
+        style={{
+          background: 'rgba(255,255,255,0.95)',
+          borderColor: '#e4d3ab',
+          boxShadow: '0 20px 40px rgba(35, 24, 8, 0.05)',
+        }}
+      >
         {filterSlot ?? <DefaultFilterBar />}
       </Paper>
 
-      <Paper withBorder radius="md" p={0} style={{ overflow: 'hidden' }}>
-        <Table striped highlightOnHover withTableBorder>
+      <Paper
+        withBorder
+        radius="md"
+        p={0}
+        style={{
+          overflow: 'hidden',
+          background: 'rgba(255,255,255,0.98)',
+          borderColor: '#e4d3ab',
+          boxShadow: '0 24px 60px rgba(24, 18, 8, 0.08)',
+        }}
+      >
+        <Box style={{ overflowX: 'auto' }}>
+        <Table
+          striped
+          highlightOnHover
+          withTableBorder
+          style={{ minWidth: tableMinWidth }}
+        >
           <Table.Thead>
             <Table.Tr>
               {columns.map((column) => (
@@ -95,6 +137,7 @@ export function ListPageLayout({
             )}
           </Table.Tbody>
         </Table>
+        </Box>
       </Paper>
     </Stack>
   );

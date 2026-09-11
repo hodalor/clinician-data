@@ -9,6 +9,11 @@ import '../../dashboard/providers/dashboard_providers.dart';
 import '../../qc/providers/qc_providers.dart';
 import '../../sync/providers/sync_providers.dart';
 
+const _gold = Color(0xFFC89A3F);
+const _ink = Color(0xFF17120D);
+const _sand = Color(0xFFF7F1E7);
+const _card = Color(0xFFFFFCF6);
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -68,8 +73,11 @@ class _RaDashboard extends ConsumerWidget {
     final syncState = ref.watch(syncManagerProvider);
 
     return Scaffold(
+      backgroundColor: _sand,
       appBar: AppBar(
         title: const Text('Home'),
+        backgroundColor: _card,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
             onPressed: () =>
@@ -98,6 +106,8 @@ class _RaDashboard extends ConsumerWidget {
       ),
       floatingActionButton: activeAssignmentAsync.maybeWhen(
         data: (assignment) => FloatingActionButton(
+          backgroundColor: _gold,
+          foregroundColor: _ink,
           onPressed: assignment?.hasActiveAssignment == true
               ? () => Navigator.of(context).pushNamed(
                     AppRouter.wizardRoute,
@@ -107,6 +117,8 @@ class _RaDashboard extends ConsumerWidget {
           child: const Icon(Icons.add),
         ),
         orElse: () => FloatingActionButton(
+          backgroundColor: const Color(0xFFE0D8CA),
+          foregroundColor: const Color(0xFF8A7A60),
           onPressed: null,
           child: const Icon(Icons.add),
         ),
@@ -114,49 +126,106 @@ class _RaDashboard extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            userName,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 4),
-          activeAssignmentAsync.when(
-            data: (assignment) {
-              if (assignment?.hasActiveAssignment != true ||
-                  assignment?.assignment == null) {
-                return const Text('No active assignment right now.');
-              }
-              final detail = assignment!.assignment!;
-              return Text(
-                'Active assignment: ${detail.from.day}/${detail.from.month} - ${detail.to.day}/${detail.to.month}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              );
-            },
-            loading: () => const Text('Checking assignment...'),
-            error: (_, __) => const Text('Could not load assignment status.'),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [_ink, Color(0xFF3C2D13)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x22000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userName,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Daily abstraction dashboard',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: const Color(0xFFF3E5C6),
+                      ),
+                ),
+                const SizedBox(height: 10),
+                activeAssignmentAsync.when(
+                  data: (assignment) {
+                    if (assignment?.hasActiveAssignment != true ||
+                        assignment?.assignment == null) {
+                      return Text(
+                        'No active assignment right now.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xFFF3E5C6),
+                            ),
+                      );
+                    }
+                    final detail = assignment!.assignment!;
+                    return Text(
+                      'Active assignment: ${detail.from.day}/${detail.from.month} - ${detail.to.day}/${detail.to.month}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: const Color(0xFFF3E5C6),
+                          ),
+                    );
+                  },
+                  loading: () => Text(
+                    'Checking assignment...',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFFF3E5C6),
+                        ),
+                  ),
+                  error: (_, __) => Text(
+                    'Could not load assignment status.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: const Color(0xFFF3E5C6),
+                        ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 18),
           Wrap(
-            spacing: 18,
+            spacing: 12,
             runSpacing: 12,
             children: [
-              _PlainMetric(label: 'Assigned', value: '${summary.assigned}'),
-              _PlainMetric(label: 'Completed', value: '${summary.completed}'),
-              _PlainMetric(label: 'Remaining', value: '${summary.remaining}'),
-              _PlainMetric(label: 'Synced', value: '${summary.synced}'),
-              _PlainMetric(
+              _SummaryCard(label: 'Assigned', value: '${summary.assigned}'),
+              _SummaryCard(label: 'Completed', value: '${summary.completed}'),
+              _SummaryCard(label: 'Remaining', value: '${summary.remaining}'),
+              _SummaryCard(label: 'Synced', value: '${summary.synced}'),
+              _SummaryCard(
                 label: 'Pending Sync',
                 value: '${summary.pendingSync}',
               ),
-              _PlainMetric(
+              _SummaryCard(
                 label: 'Returned by QC',
                 value: '${summary.returnedByQc}',
               ),
             ],
           ),
           const SizedBox(height: 18),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFE6D7BD)),
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 for (final queue in const [
                   'All',
@@ -166,13 +235,17 @@ class _RaDashboard extends ConsumerWidget {
                   'Sync Failed',
                   'Returned by QC',
                 ])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(queue),
-                      selected: selectedQueue == queue,
-                      onSelected: (_) => onQueueSelected(queue),
+                  ChoiceChip(
+                    label: Text(queue),
+                    selected: selectedQueue == queue,
+                    labelStyle: TextStyle(
+                      color: selectedQueue == queue ? _ink : const Color(0xFF5E5240),
+                      fontWeight: FontWeight.w600,
                     ),
+                    selectedColor: const Color(0xFFF0D7A4),
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0xFFD6C4A4)),
+                    onSelected: (_) => onQueueSelected(queue),
                   ),
               ],
             ),
@@ -181,7 +254,6 @@ class _RaDashboard extends ConsumerWidget {
           recordsAsync.when(
             data: (records) => _RaRecordList(
               records: _filterQueue(records, selectedQueue),
-              selectedQueue: selectedQueue,
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => Text('Could not load records: $error'),
@@ -346,13 +418,13 @@ class _PiAdminDashboard extends ConsumerWidget {
                 spacing: 18,
                 runSpacing: 12,
                 children: [
-                  _PlainMetric(label: 'Records', value: '${records.length}'),
-                  _PlainMetric(
+                    _SummaryCard(label: 'Records', value: '${records.length}'),
+                    _SummaryCard(
                     label: 'Verified',
                     value:
                         '${records.where((record) => record.status == 'Verified').length}',
                   ),
-                  _PlainMetric(label: 'Missingness', value: '$missingness'),
+                    _SummaryCard(label: 'Missingness', value: '$missingness'),
                 ],
               ),
               const SizedBox(height: 18),
@@ -402,16 +474,22 @@ class _PiAdminDashboard extends ConsumerWidget {
 class _RaRecordList extends ConsumerWidget {
   const _RaRecordList({
     required this.records,
-    required this.selectedQueue,
   });
 
   final List<ResearchRecord> records;
-  final String selectedQueue;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (records.isEmpty) {
-      return const Text('No records in this queue.');
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFE6D7BD)),
+        ),
+        child: const Text('No records in this queue.'),
+      );
     }
 
     final groups = <String, List<ResearchRecord>>{};
@@ -424,52 +502,118 @@ class _RaRecordList extends ConsumerWidget {
       children: groups.entries.map((entry) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 18),
-          child: Column(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFE6D7BD)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x11000000),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                entry.key,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              ...entry.value.map(
-                (record) => Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    title: Text(record.studyId),
-                    subtitle: Text(_buildSubtitle(record)),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Navigator.of(context).pushNamed(
-                      AppRouter.wizardRoute,
-                      arguments: AbstractionWizardRouteArgs.ra(
-                        recordId: record.id,
-                      ),
+              Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: _gold,
+                      shape: BoxShape.circle,
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Text(
+                    entry.key,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: _ink,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 24,
+                  headingTextStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: _ink,
+                      ),
+                  columns: const [
+                    DataColumn(label: Text('Study ID')),
+                    DataColumn(label: Text('Status')),
+                    DataColumn(label: Text('Sync')),
+                    DataColumn(label: Text('Updated')),
+                    DataColumn(label: Text('Open')),
+                  ],
+                  rows: entry.value
+                      .map(
+                        (record) => DataRow(
+                          cells: [
+                            DataCell(Text(record.studyId)),
+                            DataCell(Text(record.status)),
+                            DataCell(Text(_syncLabel(record.syncState))),
+                            DataCell(
+                              Text(
+                                  _formatDateTime(record.updatedAt),
+                              ),
+                            ),
+                            DataCell(
+                              OutlinedButton(
+                                onPressed: () => Navigator.of(context).pushNamed(
+                                  AppRouter.wizardRoute,
+                                  arguments: AbstractionWizardRouteArgs.ra(
+                                    recordId: record.id,
+                                  ),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: _gold,
+                                  side: const BorderSide(color: _gold),
+                                ),
+                                child: const Text('Open'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                      .toList(growable: false),
                 ),
               ),
             ],
+          ),
           ),
         );
       }).toList(growable: false),
     );
   }
 
-  String _buildSubtitle(ResearchRecord record) {
-    final syncLabel = switch (record.syncState) {
-      'pending' => 'Pending Sync',
-      'syncing' => 'Syncing',
-      'synced' => 'Synced',
-      'failed' => 'Sync Failed',
-      'conflict' => 'Needs Review',
-      _ => record.syncState,
-    };
-    return '${record.status} • $syncLabel';
+  String _syncLabel(String value) => switch (value) {
+        'pending' => 'Pending Sync',
+        'syncing' => 'Syncing',
+        'synced' => 'Synced',
+        'failed' => 'Sync Failed',
+        'conflict' => 'Needs Review',
+        _ => value,
+      };
+
+  String _formatDateTime(DateTime value) {
+    final hour = value.hour.toString().padLeft(2, '0');
+    final minute = value.minute.toString().padLeft(2, '0');
+    return '${value.day}/${value.month}/${value.year} $hour:$minute';
   }
 }
 
-class _PlainMetric extends StatelessWidget {
-  const _PlainMetric({
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
     required this.label,
     required this.value,
   });
@@ -479,17 +623,31 @@ class _PlainMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        style: Theme.of(context).textTheme.bodyLarge,
+    return Container(
+      width: 150,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE6D7BD)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextSpan(
-            text: '$label: ',
-            style: Theme.of(context).textTheme.bodyMedium,
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF7D6842),
+                  fontWeight: FontWeight.w600,
+                ),
           ),
-          TextSpan(
-            text: value,
-            style: Theme.of(context).textTheme.titleMedium,
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: _ink,
+                  fontWeight: FontWeight.w800,
+                ),
           ),
         ],
       ),

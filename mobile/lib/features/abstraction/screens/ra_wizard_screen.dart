@@ -401,7 +401,12 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
               DropdownMenuItem(value: '2', child: Text('Female')),
               DropdownMenuItem(value: '9', child: Text('Not recorded')),
             ],
-            onChanged: (value) => _updateDraft(_draft.copyWith(sex: value)),
+            onChanged: (value) => _updateDraft(
+              _draft.copyWith(
+                sex: value,
+                pregTest: value == '1' ? null : _draft.pregTest,
+              ),
+            ),
           ),
         ),
         _QuestionCard(
@@ -475,15 +480,21 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
         _QuestionCard(
           title: 'Pregnancy test',
           variableName: 'patient.preg_test',
+          helperText: _draft.sex == '1'
+              ? 'Pregnancy status can only be entered for Female or Not recorded.'
+              : null,
           child: _LargeDropdownField<String>(
-            value: _draft.pregTest,
-            hintText: 'Choose pregnancy test result',
+            value: _draft.sex == '1' ? null : _draft.pregTest,
+            hintText: _draft.sex == '1'
+                ? 'Not available when Male is selected'
+                : 'Choose pregnancy test result',
             items: const [
               DropdownMenuItem(value: '0', child: Text('Negative')),
               DropdownMenuItem(value: '1', child: Text('Positive')),
               DropdownMenuItem(value: '8', child: Text('Not done / N-A')),
               DropdownMenuItem(value: '9', child: Text('Not recorded')),
             ],
+            enabled: _draft.sex != '1',
             onChanged: (value) =>
                 _updateDraft(_draft.copyWith(pregTest: value)),
           ),
@@ -1046,13 +1057,48 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
   }
 
   String _discriminatorLabel(String code) {
-    if (code == '0') {
-      return '0 No discriminator';
+    switch (code) {
+      case '0':
+        return '0 No discriminator documented';
+      case '1':
+        return '1 Shock/uncontrolled haemorrhage';
+      case '2':
+        return '2 Chest pain/cardiovascular';
+      case '3':
+        return '3 Seizure/altered consciousness';
+      case '4':
+        return '4 Major trauma/fracture/dislocation';
+      case '5':
+        return '5 Penetrating injury';
+      case '6':
+        return '6 Burns';
+      case '7':
+        return '7 Poisoning/overdose';
+      case '8':
+        return '8 Hypoglycaemia';
+      case '9':
+        return '9 Hypertensive emergency';
+      case '10':
+        return '10 Respiratory distress/shortness of breath';
+      case '11':
+        return '11 Haemoptysis';
+      case '12':
+        return '12 Abdominal pain/trauma';
+      case '13':
+        return '13 Pregnancy-related emergency';
+      case '14':
+        return '14 Bradycardia';
+      case '15':
+        return '15 Controlled haemorrhage';
+      case '16':
+        return '16 Persistent vomiting';
+      case '17':
+        return '17 PV bleeding';
+      case '18':
+        return '18 Other documented discriminator';
+      default:
+        return code;
     }
-    if (code == '18') {
-      return '18 Other documented discriminator';
-    }
-    return '$code Discriminator code $code';
   }
 
   String _labelOrBlank(String? value) =>
@@ -1118,146 +1164,119 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
       _isSaving = true;
     });
 
-    final repo = ref.read(draftRepositoryProvider);
     final now = DateTime.now();
+    final studyId = _draft.studyId.trim();
     final computedStatus = _draft.skipsClinicalSections
         ? (_draft.status == 'Excluded' ? 'Excluded' : _draft.status)
         : _draft.status;
-
-    int recordId = _draft.recordId ??
-        await repo.createDraft(
-          studyId: _draft.studyId.trim(),
+    final saveResult = await ref.read(draftRepositoryProvider).saveDraftBundle(
+          existingRecordId: _draft.recordId,
+          studyId: studyId,
           mode: _draft.mode,
           status: computedStatus,
+          now: now,
+          initialDestination: _draft.initialDestination?.trim(),
+          duplicateFlagsJson: _draft.duplicateFlagsJson,
+          currentVersion: _draft.version,
+          eligibility: EligibilityEntriesCompanion(
+            recordId: drift.Value(_draft.recordId ?? 0),
+            studyId: drift.Value(studyId),
+            edDate: drift.Value(_draft.edDate),
+            edTime: drift.Value(_draft.edTime),
+            triageTime: drift.Value(_draft.triageTime),
+            age: drift.Value(_draft.age),
+            eligible: drift.Value(_draft.eligible),
+            exclusionCode: drift.Value(_draft.exclusionCode),
+            exclusionReason: drift.Value(_draft.exclusionReason?.trim()),
+          ),
+          patient: _draft.skipsClinicalSections
+              ? null
+              : PatientEntriesCompanion(
+                  recordId: drift.Value(_draft.recordId ?? 0),
+                  studyId: drift.Value(studyId),
+                  sex: drift.Value(_draft.sex),
+                  referral: drift.Value(_draft.referral),
+                  dm: drift.Value(_encodeBinary(_draft.dm)),
+                  htn: drift.Value(_encodeBinary(_draft.htn)),
+                  asthma: drift.Value(_encodeBinary(_draft.asthma)),
+                  rvd: drift.Value(_encodeBinary(_draft.rvd)),
+                  otherComorb: drift.Value(_encodeBinary(_draft.otherComorb)),
+                  otherComorbText: drift.Value(_draft.otherComorbText?.trim()),
+                  comorbAny: drift.Value(_draft.comorbAny),
+                  pregTest: drift.Value(_draft.sex == '1' ? null : _draft.pregTest),
+                ),
+          sats: _draft.skipsClinicalSections
+              ? null
+              : SatsEntriesCompanion(
+                  recordId: drift.Value(_draft.recordId ?? 0),
+                  studyId: drift.Value(studyId),
+                  satsCat: drift.Value(_draft.satsCat),
+                  tewsTotal: drift.Value(_draft.tewsTotal),
+                  discriminatorYes: drift.Value(_draft.discriminatorYes),
+                  discriminatorType: drift.Value(_draft.discriminatorType),
+                  documentationComplete:
+                      drift.Value(_draft.documentationComplete),
+                ),
+          physiology: _draft.skipsClinicalSections
+              ? null
+              : PhysiologyEntriesCompanion(
+                  recordId: drift.Value(_draft.recordId ?? 0),
+                  studyId: drift.Value(studyId),
+                  temp: drift.Value(_draft.temp),
+                  hr: drift.Value(_draft.hr),
+                  rr: drift.Value(_draft.rr),
+                  sbp: drift.Value(_draft.sbp),
+                  dbp: drift.Value(_draft.dbp),
+                  spo2: drift.Value(_draft.spo2),
+                  rbs: drift.Value(_draft.rbs),
+                  rdt: drift.Value(_draft.rdt),
+                  mobility: drift.Value(_draft.mobility),
+                  avpu: drift.Value(_draft.avpu),
+                  trauma: drift.Value(_draft.trauma),
+                ),
+          presentation: _draft.skipsClinicalSections
+              ? null
+              : PresentationEntriesCompanion(
+                  recordId: drift.Value(_draft.recordId ?? 0),
+                  studyId: drift.Value(studyId),
+                  chiefComplaintVerbatim:
+                      drift.Value(_draft.chiefComplaintVerbatim?.trim()),
+                  complaintGroup: drift.Value(_draft.complaintGroup),
+                  multipleComplaints: drift.Value(_draft.multipleComplaints),
+                ),
+          process: _draft.skipsClinicalSections
+              ? null
+              : ProcessEntriesCompanion(
+                  recordId: drift.Value(_draft.recordId ?? 0),
+                  studyId: drift.Value(studyId),
+                  clinicianTime: drift.Value(_draft.clinicianTime),
+                  treatmentTime: drift.Value(_draft.treatmentTime),
+                ),
+          dataQuality: _draft.skipsClinicalSections
+              ? null
+              : DataQualityEntriesCompanion(
+                  recordId: drift.Value(_draft.recordId ?? 0),
+                  studyId: drift.Value(studyId),
+                  missSats: drift.Value(_draft.spo2 == null),
+                  missTews: drift.Value(_draft.tewsTotal == null),
+                  missVitals: drift.Value(_missingAnyVitalFields),
+                  missOutcome: drift.Value(!_draft.hasCompleteOutcome),
+                  sourceConflict: const drift.Value(false),
+                  qcRequired: const drift.Value(false),
+                ),
+          outcome: _draft.skipsClinicalSections
+              ? null
+              : OutcomeEntriesCompanion(
+                  recordId: drift.Value(_draft.recordId ?? 0),
+                  studyId: drift.Value(studyId),
+                  outcome24: drift.Value(_draft.outcome24),
+                  outcomeDatetime: drift.Value(_draft.outcomeDatetime),
+                  outcomeSource: drift.Value(_draft.outcomeSource),
+                  verified: const drift.Value(false),
+                  verifiedBy: const drift.Value(null),
+                  verifiedAt: const drift.Value(null),
+                ),
         );
-
-    final nextVersion = (_draft.recordId == null ? 1 : _draft.version + 1);
-
-    await repo.updateDraftMainRecord(
-      recordId,
-      ResearchRecordsCompanion(
-        studyId: drift.Value(_draft.studyId.trim()),
-        status: drift.Value(computedStatus),
-        mode: drift.Value(_draft.mode),
-        syncState: const drift.Value('pending'),
-        syncErrorDetail: const drift.Value(null),
-        syncAttemptCount: const drift.Value(0),
-        nextRetryAt: const drift.Value(null),
-        initialDestination: drift.Value(_draft.initialDestination?.trim()),
-        duplicateFlagsJson: drift.Value(_draft.duplicateFlagsJson),
-        updatedAt: drift.Value(now),
-        version: drift.Value(nextVersion),
-      ),
-    );
-
-    await repo.upsertEligibility(
-      EligibilityEntriesCompanion(
-        recordId: drift.Value(recordId),
-        studyId: drift.Value(_draft.studyId.trim()),
-        edDate: drift.Value(_draft.edDate),
-        edTime: drift.Value(_draft.edTime),
-        triageTime: drift.Value(_draft.triageTime),
-        age: drift.Value(_draft.age),
-        eligible: drift.Value(_draft.eligible),
-        exclusionCode: drift.Value(_draft.exclusionCode),
-        exclusionReason: drift.Value(_draft.exclusionReason?.trim()),
-      ),
-    );
-
-    if (!_draft.skipsClinicalSections) {
-      await repo.upsertPatient(
-        PatientEntriesCompanion(
-          recordId: drift.Value(recordId),
-          studyId: drift.Value(_draft.studyId.trim()),
-          sex: drift.Value(_draft.sex),
-          referral: drift.Value(_draft.referral),
-          dm: drift.Value(_encodeBinary(_draft.dm)),
-          htn: drift.Value(_encodeBinary(_draft.htn)),
-          asthma: drift.Value(_encodeBinary(_draft.asthma)),
-          rvd: drift.Value(_encodeBinary(_draft.rvd)),
-          otherComorb: drift.Value(_encodeBinary(_draft.otherComorb)),
-          otherComorbText: drift.Value(_draft.otherComorbText?.trim()),
-          comorbAny: drift.Value(_draft.comorbAny),
-          pregTest: drift.Value(_draft.pregTest),
-        ),
-      );
-
-      await repo.upsertSats(
-        SatsEntriesCompanion(
-          recordId: drift.Value(recordId),
-          studyId: drift.Value(_draft.studyId.trim()),
-          satsCat: drift.Value(_draft.satsCat),
-          tewsTotal: drift.Value(_draft.tewsTotal),
-          discriminatorYes: drift.Value(_draft.discriminatorYes),
-          discriminatorType: drift.Value(_draft.discriminatorType),
-          documentationComplete: drift.Value(_draft.documentationComplete),
-        ),
-      );
-
-      await repo.upsertPhysiology(
-        PhysiologyEntriesCompanion(
-          recordId: drift.Value(recordId),
-          studyId: drift.Value(_draft.studyId.trim()),
-          temp: drift.Value(_draft.temp),
-          hr: drift.Value(_draft.hr),
-          rr: drift.Value(_draft.rr),
-          sbp: drift.Value(_draft.sbp),
-          dbp: drift.Value(_draft.dbp),
-          spo2: drift.Value(_draft.spo2),
-          rbs: drift.Value(_draft.rbs),
-          rdt: drift.Value(_draft.rdt),
-          mobility: drift.Value(_draft.mobility),
-          avpu: drift.Value(_draft.avpu),
-          trauma: drift.Value(_draft.trauma),
-        ),
-      );
-
-      await repo.upsertPresentation(
-        PresentationEntriesCompanion(
-          recordId: drift.Value(recordId),
-          studyId: drift.Value(_draft.studyId.trim()),
-          chiefComplaintVerbatim:
-              drift.Value(_draft.chiefComplaintVerbatim?.trim()),
-          complaintGroup: drift.Value(_draft.complaintGroup),
-          multipleComplaints: drift.Value(_draft.multipleComplaints),
-        ),
-      );
-
-      await repo.upsertProcess(
-        ProcessEntriesCompanion(
-          recordId: drift.Value(recordId),
-          studyId: drift.Value(_draft.studyId.trim()),
-          clinicianTime: drift.Value(_draft.clinicianTime),
-          treatmentTime: drift.Value(_draft.treatmentTime),
-        ),
-      );
-
-      await repo.upsertDataQuality(
-        DataQualityEntriesCompanion(
-          recordId: drift.Value(recordId),
-          studyId: drift.Value(_draft.studyId.trim()),
-          missSats: drift.Value(_draft.spo2 == null),
-          missTews: drift.Value(_draft.tewsTotal == null),
-          missVitals: drift.Value(_missingAnyVitalFields),
-          missOutcome: drift.Value(!_draft.hasCompleteOutcome),
-          sourceConflict: const drift.Value(false),
-          qcRequired: const drift.Value(false),
-        ),
-      );
-
-      await repo.upsertOutcome(
-        OutcomeEntriesCompanion(
-          recordId: drift.Value(recordId),
-          studyId: drift.Value(_draft.studyId.trim()),
-          outcome24: drift.Value(_draft.outcome24),
-          outcomeDatetime: drift.Value(_draft.outcomeDatetime),
-          outcomeSource: drift.Value(_draft.outcomeSource),
-          verified: const drift.Value(false),
-          verifiedBy: const drift.Value(null),
-          verifiedAt: const drift.Value(null),
-        ),
-      );
-    }
 
     if (!mounted) {
       return;
@@ -1265,7 +1284,10 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
 
     setState(() {
       _isSaving = false;
-      _draft = _draft.copyWith(recordId: recordId, version: nextVersion);
+      _draft = _draft.copyWith(
+        recordId: saveResult.recordId,
+        version: saveResult.version,
+      );
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1494,12 +1516,14 @@ class _LargeDropdownField<T> extends StatelessWidget {
     required this.hintText,
     required this.items,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final T? value;
   final String hintText;
   final List<DropdownMenuItem<T>> items;
   final ValueChanged<T?> onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -1507,9 +1531,11 @@ class _LargeDropdownField<T> extends StatelessWidget {
       initialValue: value,
       isExpanded: true,
       items: items,
-      onChanged: onChanged,
+      onChanged: enabled ? onChanged : null,
       decoration: InputDecoration(
         hintText: hintText,
+        filled: !enabled,
+        fillColor: enabled ? null : const Color(0xFFF5F5F5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
         ),

@@ -2,6 +2,16 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 import '../local/app_database.dart';
 
+class DraftSaveResult {
+  const DraftSaveResult({
+    required this.recordId,
+    required this.version,
+  });
+
+  final int recordId;
+  final int version;
+}
+
 class DraftRepository {
   DraftRepository({
     required AppDatabase database,
@@ -152,5 +162,124 @@ class DraftRepository {
 
   Future<void> deleteDraft(int recordId) {
     return _recordDao.deleteDraft(recordId);
+  }
+
+  Future<DraftSaveResult> saveDraftBundle({
+    required int? existingRecordId,
+    required String studyId,
+    required String mode,
+    required String status,
+    required DateTime now,
+    required String? initialDestination,
+    required String? duplicateFlagsJson,
+    required int currentVersion,
+    required EligibilityEntriesCompanion eligibility,
+    PatientEntriesCompanion? patient,
+    SatsEntriesCompanion? sats,
+    PhysiologyEntriesCompanion? physiology,
+    PresentationEntriesCompanion? presentation,
+    ProcessEntriesCompanion? process,
+    DataQualityEntriesCompanion? dataQuality,
+    OutcomeEntriesCompanion? outcome,
+  }) {
+    return _database.transaction(() async {
+      final recordId = existingRecordId ??
+          await _recordDao.createDraft(
+            ResearchRecordsCompanion.insert(
+              clientUuid: _uuid.v4(),
+              studyId: studyId,
+              status: Value(status),
+              mode: Value(mode),
+              syncState: const Value('pending'),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+
+      final nextVersion = existingRecordId == null ? 1 : currentVersion + 1;
+
+      await _recordDao.updateDraftMainRecord(
+        recordId,
+        ResearchRecordsCompanion(
+          studyId: Value(studyId),
+          status: Value(status),
+          mode: Value(mode),
+          syncState: const Value('pending'),
+          syncErrorDetail: const Value(null),
+          syncAttemptCount: const Value(0),
+          nextRetryAt: const Value(null),
+          initialDestination: Value(initialDestination),
+          duplicateFlagsJson: Value(duplicateFlagsJson),
+          updatedAt: Value(now),
+          version: Value(nextVersion),
+        ),
+      );
+
+      await _recordDao.upsertEligibility(
+        eligibility.copyWith(
+          recordId: Value(recordId),
+          studyId: Value(studyId),
+        ),
+      );
+
+      if (patient != null) {
+        await _recordDao.upsertPatient(
+          patient.copyWith(
+            recordId: Value(recordId),
+            studyId: Value(studyId),
+          ),
+        );
+      }
+      if (sats != null) {
+        await _recordDao.upsertSats(
+          sats.copyWith(
+            recordId: Value(recordId),
+            studyId: Value(studyId),
+          ),
+        );
+      }
+      if (physiology != null) {
+        await _recordDao.upsertPhysiology(
+          physiology.copyWith(
+            recordId: Value(recordId),
+            studyId: Value(studyId),
+          ),
+        );
+      }
+      if (presentation != null) {
+        await _recordDao.upsertPresentation(
+          presentation.copyWith(
+            recordId: Value(recordId),
+            studyId: Value(studyId),
+          ),
+        );
+      }
+      if (process != null) {
+        await _recordDao.upsertProcess(
+          process.copyWith(
+            recordId: Value(recordId),
+            studyId: Value(studyId),
+          ),
+        );
+      }
+      if (dataQuality != null) {
+        await _recordDao.upsertDataQuality(
+          dataQuality.copyWith(
+            recordId: Value(recordId),
+            studyId: Value(studyId),
+          ),
+        );
+      }
+      if (outcome != null) {
+        await _recordDao.upsertOutcome(
+          outcome.copyWith(
+            recordId: Value(recordId),
+            studyId: Value(studyId),
+          ),
+        );
+      }
+
+      return DraftSaveResult(recordId: recordId, version: nextVersion);
+    });
   }
 }
