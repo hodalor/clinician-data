@@ -1,0 +1,60 @@
+services:
+  mongo1:
+    image: mongo:8.0
+    container_name: seu-mongo1
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo1_data:/data/db
+
+  mongo2:
+    image: mongo:8.0
+    container_name: seu-mongo2
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
+    ports:
+      - '27018:27017'
+    volumes:
+      - mongo2_data:/data/db
+
+  mongo3:
+    image: mongo:8.0
+    container_name: seu-mongo3
+    command: ['mongod', '--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
+    ports:
+      - '27019:27017'
+    volumes:
+      - mongo3_data:/data/db
+
+  mongo-init-replica:
+    image: mongo:8.0
+    container_name: seu-mongo-init
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    volumes:
+      - ./docker/mongo/init-replica.js:/scripts/init-replica.js:ro
+    restart: 'no'
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        until mongosh --host mongo1:27017 --quiet --eval "db.adminCommand({ ping: 1 })"; do
+          echo "Waiting for mongo1..."
+          sleep 2
+        done
+        until mongosh --host mongo2:27017 --quiet --eval "db.adminCommand({ ping: 1 })"; do
+          echo "Waiting for mongo2..."
+          sleep 2
+        done
+        until mongosh --host mongo3:27017 --quiet --eval "db.adminCommand({ ping: 1 })"; do
+          echo "Waiting for mongo3..."
+          sleep 2
+        done
+        mongosh --host mongo1:27017 /scripts/init-replica.js
+
+volumes:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:

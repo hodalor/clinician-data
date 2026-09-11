@@ -1,0 +1,31 @@
+.DS_Store
+
+# Root / monorepo caches
+.idea/
+.vscode/
+*.tsbuildinfo
+
+# Node
+**/node_modules/
+**/dist/
+**/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Flutter / Dart local state
+**/.dart_tool/
+**/.dartServer/
+**/.flutter-sdk/
+**/.config/
+**/.pub/
+**/.pub-cache/
+**/build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Local env
+**/.env
+**/*.local
