@@ -2,6 +2,7 @@ import {
   AppShell,
   Avatar,
   Box,
+  Burger,
   Button,
   Group,
   Menu,
@@ -9,6 +10,7 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/use-auth';
 import { canAccess, navItems } from '../routes/permissions';
@@ -16,14 +18,21 @@ import { canAccess, navItems } from '../routes/permissions';
 export function AdminShell() {
   const { session, logout } = useAuth();
   const location = useLocation();
+  const [opened, { toggle, close }] = useDisclosure(false);
+  const isMobile = useMediaQuery('(max-width: 48em)');
   const role = session?.user.role;
   const visibleItems = navItems.filter((item) => canAccess(role, item.roles));
+  const navbarWidth = 220;
 
   return (
     <AppShell
       header={{ height: 60 }}
-      navbar={{ width: 220, breakpoint: 0 }}
-      padding="lg"
+      navbar={{
+        width: isMobile ? 260 : navbarWidth,
+        breakpoint: 'sm',
+        collapsed: { mobile: !opened },
+      }}
+      padding={{ base: 'sm', sm: 'lg' }}
       styles={{
         main: {
           background:
@@ -31,11 +40,14 @@ export function AdminShell() {
           minHeight: '100vh',
         },
         navbar: {
-          background:
-            'linear-gradient(180deg, #16120d 0%, #221a10 100%)',
+          top: 0,
+          height: '100vh',
+          background: 'linear-gradient(180deg, #16120d 0%, #221a10 100%)',
           borderRight: '1px solid #4a3820',
         },
         header: {
+          left: isMobile ? 0 : navbarWidth,
+          width: isMobile ? '100%' : `calc(100% - ${navbarWidth}px)`,
           background: 'rgba(255,255,255,0.92)',
           borderBottom: '1px solid #e4d3ab',
           backdropFilter: 'blur(10px)',
@@ -43,7 +55,20 @@ export function AdminShell() {
       }}
     >
       <AppShell.Header px="lg">
-        <Group justify="flex-end" align="center" style={{ height: '100%' }}>
+        <Group justify="space-between" align="center" style={{ height: '100%' }}>
+          <Group gap="sm" align="center">
+            <Burger
+              opened={opened}
+              onClick={toggle}
+              hiddenFrom="sm"
+              size="sm"
+              aria-label="Toggle navigation"
+            />
+            <Text fw={700} size="sm" c="dimmed">
+              Admin console
+            </Text>
+          </Group>
+
           <Menu shadow="md" width={220} position="bottom-end">
             <Menu.Target>
               <UnstyledButton>
@@ -78,11 +103,18 @@ export function AdminShell() {
 
       <AppShell.Navbar p={0}>
         <Stack gap={0} style={{ height: '100%' }}>
-          <Box px="md" py="sm" style={{ borderBottom: '1px solid #4a3820', flexShrink: 0 }}>
-            <Text fw={800} size="lg" c="#f2d18b">
+          <Box
+            px="md"
+            py="lg"
+            style={{
+              borderBottom: '1px solid #4a3820',
+              flexShrink: 0,
+            }}
+          >
+            <Text fw={800} size="xl" c="#f2d18b" lh={1.1}>
               SEU Study
             </Text>
-            <Text size="sm" c="#d7c39d">
+            <Text size="sm" c="#d7c39d" mt={6}>
               Admin console
             </Text>
           </Box>
@@ -101,6 +133,11 @@ export function AdminShell() {
                     key={item.path}
                     component={NavLink}
                     to={item.path}
+                    onClick={() => {
+                      if (isMobile) {
+                        close();
+                      }
+                    }}
                     justify="flex-start"
                     variant={isActive ? 'filled' : 'subtle'}
                     color={isActive ? 'yellow' : 'gray'}

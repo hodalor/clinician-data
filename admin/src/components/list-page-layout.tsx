@@ -52,7 +52,7 @@ export function ListPageLayout({
         <Title order={2} fw={600}>
           {title}
         </Title>
-        <Group gap="lg">
+        <Group gap="sm" wrap="wrap">
           {summaryItems.map((item) => (
             <Paper
               key={item.label}
@@ -62,6 +62,7 @@ export function ListPageLayout({
               py="sm"
               style={{
                 minWidth: 120,
+                flex: '1 1 140px',
                 background:
                   'linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,240,226,0.95))',
                 borderColor: '#e4d3ab',
@@ -81,7 +82,7 @@ export function ListPageLayout({
       <Paper
         withBorder
         radius="md"
-        p="md"
+        p={{ base: 'sm', sm: 'md' }}
         style={{
           background: 'rgba(255,255,255,0.95)',
           borderColor: '#e4d3ab',
@@ -102,7 +103,7 @@ export function ListPageLayout({
           boxShadow: '0 24px 60px rgba(24, 18, 8, 0.08)',
         }}
       >
-        <Group justify="space-between" px="md" pt="md">
+        <Group justify="space-between" px="md" pt="md" wrap="wrap">
           <Text size="sm" c="dimmed">
             Tip: scroll sideways to see more columns.
           </Text>
@@ -112,7 +113,7 @@ export function ListPageLayout({
           striped
           highlightOnHover
           withTableBorder
-          style={{ minWidth: tableMinWidth }}
+          style={{ width: `max(100%, ${tableMinWidth}px)` }}
         >
           <Table.Thead>
             <Table.Tr>
