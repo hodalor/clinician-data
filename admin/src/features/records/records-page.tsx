@@ -1,12 +1,20 @@
 import { Button, Group, Select, TextInput } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { getAssignmentOptions } from '../../api/assignments-api';
 import { listRecords } from '../../api/records-api';
 import { ListPageLayout } from '../../components/list-page-layout';
 
+const satsCategoryOptions = [
+  { value: '1', label: '1 Red' },
+  { value: '2', label: '2 Orange' },
+  { value: '3', label: '3 Yellow' },
+  { value: '4', label: '4 Green' },
+];
+
 export function RecordsPage() {
+  const navigate = useNavigate();
   const [filters, setFilters] = useState({
     status: '',
     extractor_id: '',
@@ -64,10 +72,10 @@ export function RecordsPage() {
         { key: 'extractor', label: 'Research assistant' },
         { key: 'qcComment', label: 'QC comment' },
         { key: 'updatedAt', label: 'Last updated' },
-        { key: 'actions', label: 'Actions' },
       ]}
       rows={records.map((record) => ({
         id: record._id,
+        onClick: () => navigate(`/records/${record._id}`),
         values: {
           studyId: record.study_id,
           status: record.status,
@@ -79,11 +87,6 @@ export function RecordsPage() {
           updatedAt: record.updated_at
             ? new Date(record.updated_at).toLocaleString()
             : 'Not available',
-          actions: (
-            <Button component={Link} to={`/records/${record._id}`} size="sm" variant="light">
-              View
-            </Button>
-          ),
         },
       }))}
       tableMinWidth={1240}
@@ -141,7 +144,7 @@ export function RecordsPage() {
           <Select
             label="SATS category"
             placeholder="Any"
-            data={['1', '2', '3', '4']}
+            data={satsCategoryOptions}
             value={draftFilters.sats_cat}
             onChange={(value) => setDraftFilters((current) => ({ ...current, sats_cat: value ?? '' }))}
           />

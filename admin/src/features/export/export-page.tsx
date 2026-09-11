@@ -100,6 +100,13 @@ const exportItems: ExportItem[] = [
   },
 ];
 
+const satsCategoryOptions = [
+  { value: '1', label: '1 Red' },
+  { value: '2', label: '2 Orange' },
+  { value: '3', label: '3 Yellow' },
+  { value: '4', label: '4 Green' },
+];
+
 function buildIconUrl(prompt: string) {
   return `https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=${encodeURIComponent(
     prompt,
@@ -196,7 +203,7 @@ export function ExportPage() {
           />
           <Select
             label="SATS category"
-            data={['1', '2', '3', '4']}
+            data={satsCategoryOptions}
             value={filters.sats_cat}
             onChange={(value) =>
               setFilters((current) => ({ ...current, sats_cat: value ?? '' }))

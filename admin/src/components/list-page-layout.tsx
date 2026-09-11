@@ -24,6 +24,7 @@ export interface TableColumn {
 export interface TableRow {
   id: string;
   values: Record<string, ReactNode>;
+  onClick?: () => void;
 }
 
 interface ListPageLayoutProps {
@@ -126,7 +127,15 @@ export function ListPageLayout({
               </Table.Tr>
             ) : (
               rows.map((row) => (
-                <Table.Tr key={row.id}>
+                <Table.Tr
+                  key={row.id}
+                  onClick={row.onClick}
+                  style={
+                    row.onClick
+                      ? { cursor: 'pointer' }
+                      : undefined
+                  }
+                >
                   {columns.map((column) => (
                     <Table.Td key={`${row.id}-${column.key}`}>
                       {row.values[column.key]}
