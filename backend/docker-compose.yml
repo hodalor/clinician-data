@@ -1,7 +1,7 @@
 services:
   mongo1:
     image: mongo:8.0
-    container_name: seu-mongo1
+    container_name: sue-mongo1
     command: ['mongod', '--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
     ports:
       - '27017:27017'
@@ -10,7 +10,7 @@ services:
 
   mongo2:
     image: mongo:8.0
-    container_name: seu-mongo2
+    container_name: sue-mongo2
     command: ['mongod', '--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
     ports:
       - '27018:27017'
@@ -19,7 +19,7 @@ services:
 
   mongo3:
     image: mongo:8.0
-    container_name: seu-mongo3
+    container_name: sue-mongo3
     command: ['mongod', '--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
     ports:
       - '27019:27017'
@@ -28,7 +28,7 @@ services:
 
   mongo-init-replica:
     image: mongo:8.0
-    container_name: seu-mongo-init
+    container_name: sue-mongo-init
     depends_on:
       - mongo1
       - mongo2

@@ -36,7 +36,7 @@ describe('Sync and QC workflows (integration)', () => {
 
   beforeAll(async () => {
     const mongoPort = 27027;
-    mongoDbPath = await mkdtemp(join(tmpdir(), 'seu-backend-mongo-'));
+    mongoDbPath = await mkdtemp(join(tmpdir(), 'sue-backend-mongo-'));
     mongodProcess = spawn(
       'mongod',
       [
@@ -53,7 +53,7 @@ describe('Sync and QC workflows (integration)', () => {
         stdio: 'ignore',
       },
     );
-    mongoUri = `mongodb://127.0.0.1:${mongoPort}/seu_backend_test?replicaSet=rs-test`;
+    mongoUri = `mongodb://127.0.0.1:${mongoPort}/sue_backend_test?replicaSet=rs-test`;
 
     await waitForMongo(`mongodb://127.0.0.1:${mongoPort}/admin`);
     await execMongoShell(

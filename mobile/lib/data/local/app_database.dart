@@ -293,7 +293,7 @@ LazyDatabase _openConnection(DatabaseKeyService keyService) {
   return LazyDatabase(() async {
     final dbKey = await keyService.readOrCreateDatabaseKey();
     final appDir = await getApplicationDocumentsDirectory();
-    final file = File(p.join(appDir.path, 'seu_mobile_encrypted.db'));
+    final file = File(p.join(appDir.path, 'sue_mobile_encrypted.db'));
 
     return NativeDatabase.createInBackground(
       file,

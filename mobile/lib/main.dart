@@ -12,5 +12,5 @@ Future<void> main() async {
     // Allow the scaffold to boot with fallback defaults until a real .env is set.
   }
 
-  runApp(const ProviderScope(child: SeuMobileApp()));
+  runApp(const ProviderScope(child: SueMobileApp()));
 }

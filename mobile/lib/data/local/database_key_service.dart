@@ -7,7 +7,7 @@ class DatabaseKeyService {
           aOptions: AndroidOptions(encryptedSharedPreferences: true),
         );
 
-  static const _databaseKeyStorageKey = 'seu_mobile_db_key_v1';
+  static const _databaseKeyStorageKey = 'sue_mobile_db_key_v1';
 
   final FlutterSecureStorage _storage;
 

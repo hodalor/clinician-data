@@ -3,13 +3,13 @@ import 'core/routing/app_shell.dart';
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
 
-class SeuMobileApp extends StatelessWidget {
-  const SeuMobileApp({super.key});
+class SueMobileApp extends StatelessWidget {
+  const SueMobileApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SEU Mobile',
+      title: 'SUE Mobile',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       onGenerateRoute: AppRouter.onGenerateRoute,

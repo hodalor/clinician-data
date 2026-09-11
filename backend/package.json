@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "0.0.1",
-  "description": "NestJS + Express backend scaffold for SEU",
+  "description": "NestJS + Express backend scaffold for SUE",
   "author": "",
   "private": true,
   "license": "UNLICENSED",

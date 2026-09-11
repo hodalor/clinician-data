@@ -1,4 +1,4 @@
-# SEU Mobile
+# SUE Mobile
 
 Android-first Flutter scaffold for offline abstraction, sync, and QC workflows.
 

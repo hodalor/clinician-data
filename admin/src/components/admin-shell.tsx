@@ -112,7 +112,7 @@ export function AdminShell() {
             }}
           >
             <Text fw={800} size="xl" c="#f2d18b" lh={1.1}>
-              SEU Study
+              SUE Study
             </Text>
             <Text size="sm" c="#d7c39d" mt={6}>
               Admin console

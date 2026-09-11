@@ -109,7 +109,7 @@ describe('D0 pilot harness', () => {
 
   beforeAll(async () => {
     const mongoPort = 27027;
-    mongoDbPath = await mkdtemp(join(tmpdir(), 'seu-backend-d0-'));
+    mongoDbPath = await mkdtemp(join(tmpdir(), 'sue-backend-d0-'));
     mongodProcess = spawn(
       'mongod',
       [
@@ -124,7 +124,7 @@ describe('D0 pilot harness', () => {
       ],
       { stdio: 'ignore' },
     );
-    mongoUri = `mongodb://127.0.0.1:${mongoPort}/seu_backend_test?replicaSet=rs-test`;
+    mongoUri = `mongodb://127.0.0.1:${mongoPort}/sue_backend_test?replicaSet=rs-test`;
 
     await waitForMongo(`mongodb://127.0.0.1:${mongoPort}/admin`);
     await execMongoShell(

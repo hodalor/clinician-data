@@ -21,7 +21,7 @@ async function bootstrap() {
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('SEU Backend API')
+    .setTitle('SUE Backend API')
     .setDescription(
       'Backend API for auth, sync, QC, records, and export workflows',
     )
