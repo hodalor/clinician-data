@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -14,6 +13,7 @@ import type { Model } from 'mongoose';
 import type { JwtPayload } from '../../common/auth/jwt-payload.interface.js';
 import type { UserRole } from '../../common/database/schema.constants.js';
 import { DeviceModelName } from '../devices/schemas/device.schema.js';
+import { DeviceRequestModelName } from '../devices/schemas/device-request.schema.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { LogoutDto } from './dto/logout.dto.js';
 import type { RefreshDto } from './dto/refresh.dto.js';
@@ -49,6 +49,15 @@ type RefreshTokenRecord = {
   created_at: Date;
 };
 
+type DeviceRequestRecord = {
+  _id: Types.ObjectId;
+  user_id: Types.ObjectId;
+  requested_device_id: string;
+  requested_at: Date;
+  status: 'pending' | 'approved' | 'rejected';
+  save: () => Promise<DeviceRequestRecord>;
+};
+
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
 const REFRESH_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 
@@ -61,11 +70,17 @@ export class AuthService {
     private readonly userModel: Model<UserRecord>,
     @InjectModel(DeviceModelName)
     private readonly deviceModel: Model<DeviceRecord>,
+    @InjectModel(DeviceRequestModelName)
+    private readonly deviceRequestModel: Model<DeviceRequestRecord>,
     @InjectModel(RefreshTokenModelName)
     private readonly refreshTokenModel: Model<RefreshTokenRecord>,
   ) {}
 
-  async login(loginDto: LoginDto, deviceIdHeader?: string) {
+  async login(
+    loginDto: LoginDto,
+    deviceIdHeader?: string,
+    isApprovalPoll = false,
+  ) {
     const email = this.readRequiredString(
       loginDto.email,
       'email',
@@ -86,7 +101,15 @@ export class AuthService {
     }
 
     if (user.role === 'RA') {
-      await this.enforceRaDeviceLogin(user, deviceId);
+      const deviceGateResponse = await this.enforceRaDeviceLogin(
+        user,
+        deviceId,
+        isApprovalPoll,
+      );
+
+      if (deviceGateResponse) {
+        return deviceGateResponse;
+      }
     }
 
     const tokens = await this.issueTokens(user, deviceId);
@@ -224,6 +247,7 @@ export class AuthService {
   private async enforceRaDeviceLogin(
     user: UserRecord,
     deviceId: string | null,
+    isApprovalPoll: boolean,
   ) {
     if (!deviceId) {
       throw new BadRequestException(
@@ -241,15 +265,69 @@ export class AuthService {
       .exec();
 
     if (activeDevice && activeDevice.device_id !== deviceId) {
-      throw new ForbiddenException(
-        'RA accounts are limited to one active device. Ask an admin to deactivate the existing device before logging in from another device.',
-      );
+      return this.createOrRefreshDeviceRequest(user, deviceId, isApprovalPoll);
     }
 
     if (activeDevice && activeDevice.device_id === deviceId) {
       activeDevice.last_seen_at = new Date();
       await activeDevice.save();
     }
+
+    return null;
+  }
+
+  private async createOrRefreshDeviceRequest(
+    user: UserRecord,
+    deviceId: string,
+    isApprovalPoll: boolean,
+  ) {
+    const now = new Date();
+    const existingRequest = await this.deviceRequestModel
+      .findOne({
+        user_id: user._id,
+        requested_device_id: deviceId,
+      })
+      .exec();
+
+    if (!existingRequest) {
+      const createdRequest = await this.deviceRequestModel.create({
+        user_id: user._id,
+        requested_device_id: deviceId,
+        requested_at: now,
+        status: 'pending',
+      });
+
+      return this.pendingApprovalResponse(createdRequest);
+    }
+
+    if (existingRequest.status === 'rejected' && isApprovalPoll) {
+      return this.rejectedApprovalResponse(existingRequest);
+    }
+
+    if (existingRequest.status !== 'pending' || !isApprovalPoll) {
+      existingRequest.status = 'pending';
+      existingRequest.requested_at = now;
+      await existingRequest.save();
+    }
+
+    return this.pendingApprovalResponse(existingRequest);
+  }
+
+  private pendingApprovalResponse(request: DeviceRequestRecord) {
+    return {
+      status: 'pending_approval' as const,
+      request_id: request._id.toString(),
+      message: 'Waiting for admin approval to use this phone.',
+    };
+  }
+
+  private rejectedApprovalResponse(request: DeviceRequestRecord) {
+    return {
+      status: 'rejected' as const,
+      request_id: request._id.toString(),
+      message:
+        'This phone was not approved for this account. Please contact an admin or try again later.',
+    };
   }
 
   private async assertRaDeviceStillAuthorised(

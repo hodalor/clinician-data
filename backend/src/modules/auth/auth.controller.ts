@@ -9,8 +9,16 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  login(@Body() loginDto: LoginDto, @Headers('x-device-id') deviceId?: string) {
-    return this.authService.login(loginDto, deviceId);
+  login(
+    @Body() loginDto: LoginDto,
+    @Headers('x-device-id') deviceId?: string,
+    @Headers('x-device-request-poll') deviceRequestPoll?: string,
+  ) {
+    return this.authService.login(
+      loginDto,
+      deviceId,
+      deviceRequestPoll === 'true',
+    );
   }
 
   @Post('refresh')

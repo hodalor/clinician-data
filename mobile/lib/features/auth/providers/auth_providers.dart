@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../../data/local/auth_session_storage.dart';
+import '../../../data/models/auth_login_result.dart';
 import '../../../data/models/auth_session.dart';
 import '../../../data/remote/api_client.dart';
 import '../../../data/remote/auth_api.dart';
@@ -10,6 +13,7 @@ import '../../../data/repositories/auth_repository.dart';
 enum AuthPhase {
   bootstrapping,
   loggedOut,
+  pendingApproval,
   authenticated,
   locked,
 }
@@ -23,6 +27,7 @@ class AuthState {
     this.biometricEnabled = false,
     this.lockPromptDismissed = false,
     this.isBusy = false,
+    this.pendingMessage,
   });
 
   final AuthPhase phase;
@@ -32,6 +37,7 @@ class AuthState {
   final bool biometricEnabled;
   final bool lockPromptDismissed;
   final bool isBusy;
+  final String? pendingMessage;
 
   bool get isAuthenticated => phase == AuthPhase.authenticated;
   bool get needsUnlock => phase == AuthPhase.locked;
@@ -50,6 +56,8 @@ class AuthState {
     bool? biometricEnabled,
     bool? lockPromptDismissed,
     bool? isBusy,
+    String? pendingMessage,
+    bool clearPendingMessage = false,
   }) {
     return AuthState(
       phase: phase ?? this.phase,
@@ -59,6 +67,9 @@ class AuthState {
       biometricEnabled: biometricEnabled ?? this.biometricEnabled,
       lockPromptDismissed: lockPromptDismissed ?? this.lockPromptDismissed,
       isBusy: isBusy ?? this.isBusy,
+      pendingMessage: clearPendingMessage
+          ? null
+          : (pendingMessage ?? this.pendingMessage),
     );
   }
 }
@@ -83,13 +94,22 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 });
 
 class AuthController extends Notifier<AuthState> {
+  Timer? _approvalPollTimer;
+  String? _pendingEmail;
+  String? _pendingPassword;
+  bool _isCheckingPendingApproval = false;
+
   @override
   AuthState build() {
+    ref.onDispose(() {
+      _approvalPollTimer?.cancel();
+    });
     Future.microtask(_bootstrap);
     return const AuthState(phase: AuthPhase.bootstrapping);
   }
 
   Future<void> _bootstrap() async {
+    _stopApprovalPolling();
     final storage = ref.read(authSessionStorageProvider);
     final session = await storage.readSession();
     final hasPin = await storage.hasPin();
@@ -120,12 +140,39 @@ class AuthController extends Notifier<AuthState> {
     required String email,
     required String password,
   }) async {
+    _stopApprovalPolling();
     state = state.copyWith(isBusy: true, clearError: true);
     try {
-      final session = await ref.read(authRepositoryProvider).login(
+      final result = await ref.read(authRepositoryProvider).login(
             email: email.trim(),
             password: password,
           );
+
+      if (result.status == AuthLoginStatus.pendingApproval) {
+        _pendingEmail = email.trim();
+        _pendingPassword = password;
+        state = state.copyWith(
+          phase: AuthPhase.pendingApproval,
+          isBusy: false,
+          pendingMessage:
+              result.message ?? 'Waiting for admin approval to use this phone.',
+          clearError: true,
+        );
+        _startApprovalPolling();
+        return;
+      }
+
+      if (result.status == AuthLoginStatus.rejected) {
+        state = state.copyWith(
+          phase: AuthPhase.loggedOut,
+          errorMessage: result.message ?? 'This phone was not approved yet.',
+          isBusy: false,
+          clearPendingMessage: true,
+        );
+        return;
+      }
+
+      final session = result.session!;
       final storage = ref.read(authSessionStorageProvider);
       state = state.copyWith(
         phase: AuthPhase.authenticated,
@@ -134,18 +181,21 @@ class AuthController extends Notifier<AuthState> {
         biometricEnabled: await storage.isBiometricUnlockEnabled(),
         lockPromptDismissed: await storage.isLockPromptDismissed(),
         isBusy: false,
+        clearPendingMessage: true,
       );
     } on DioException catch (error) {
       state = state.copyWith(
         phase: AuthPhase.loggedOut,
         errorMessage: _readDioMessage(error),
         isBusy: false,
+        clearPendingMessage: true,
       );
     } catch (error) {
       state = state.copyWith(
         phase: AuthPhase.loggedOut,
         errorMessage: error.toString(),
         isBusy: false,
+        clearPendingMessage: true,
       );
     }
   }
@@ -173,13 +223,25 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> logout() async {
+    _stopApprovalPolling();
     await ref.read(authRepositoryProvider).logout();
     await _bootstrap();
   }
 
   Future<void> forceLogout() async {
+    _stopApprovalPolling();
     await ref.read(authRepositoryProvider).logout(remote: false);
     await _bootstrap();
+  }
+
+  void leavePendingApproval() {
+    _stopApprovalPolling();
+    state = state.copyWith(
+      phase: AuthPhase.loggedOut,
+      clearPendingMessage: true,
+      clearError: true,
+      isBusy: false,
+    );
   }
 
   Future<void> dismissLockPrompt() async {
@@ -266,6 +328,72 @@ class AuthController extends Notifier<AuthState> {
         phase: AuthPhase.locked,
         clearError: true,
       );
+    }
+  }
+
+  void _startApprovalPolling() {
+    _approvalPollTimer?.cancel();
+    _approvalPollTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (_) => _checkPendingApproval(),
+    );
+  }
+
+  void _stopApprovalPolling() {
+    _approvalPollTimer?.cancel();
+    _approvalPollTimer = null;
+    _pendingEmail = null;
+    _pendingPassword = null;
+    _isCheckingPendingApproval = false;
+  }
+
+  Future<void> _checkPendingApproval() async {
+    if (_isCheckingPendingApproval ||
+        state.phase != AuthPhase.pendingApproval ||
+        _pendingEmail == null ||
+        _pendingPassword == null) {
+      return;
+    }
+
+    _isCheckingPendingApproval = true;
+    try {
+      final result = await ref.read(authRepositoryProvider).login(
+            email: _pendingEmail!,
+            password: _pendingPassword!,
+            isApprovalPoll: true,
+          );
+
+      if (result.status == AuthLoginStatus.pendingApproval) {
+        return;
+      }
+
+      if (result.status == AuthLoginStatus.rejected) {
+        _stopApprovalPolling();
+        state = state.copyWith(
+          phase: AuthPhase.loggedOut,
+          errorMessage:
+              result.message ?? 'This phone was not approved for this account.',
+          clearPendingMessage: true,
+        );
+        return;
+      }
+
+      final storage = ref.read(authSessionStorageProvider);
+      final session = result.session!;
+      _stopApprovalPolling();
+      state = state.copyWith(
+        phase: AuthPhase.authenticated,
+        session: session,
+        hasPin: await storage.hasPin(),
+        biometricEnabled: await storage.isBiometricUnlockEnabled(),
+        lockPromptDismissed: await storage.isLockPromptDismissed(),
+        clearError: true,
+        clearPendingMessage: true,
+      );
+    } on DioException {
+      // Keep waiting quietly on transient network errors.
+    } finally {
+      _isCheckingPendingApproval = false;
     }
   }
 

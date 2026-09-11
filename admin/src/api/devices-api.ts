@@ -1,5 +1,5 @@
 import { requestJson } from './http';
-import type { DeviceListResponse } from './types';
+import type { DeviceListResponse, DeviceRequestListResponse } from './types';
 
 export function listDevices() {
   return requestJson<DeviceListResponse>('/devices', { withAuth: true });
@@ -12,10 +12,23 @@ export function deactivateDevice(id: string) {
   });
 }
 
-export function authoriseReplacement(payload: { user_id: string; device_id: string }) {
-  return requestJson('/devices/authorise-replacement', {
+export function listDeviceRequests(status = 'pending') {
+  const query = new URLSearchParams({ status }).toString();
+  return requestJson<DeviceRequestListResponse>(`/devices/requests?${query}`, {
+    withAuth: true,
+  });
+}
+
+export function approveDeviceRequest(id: string) {
+  return requestJson(`/devices/requests/${id}/approve`, {
     method: 'POST',
-    body: payload,
+    withAuth: true,
+  });
+}
+
+export function rejectDeviceRequest(id: string) {
+  return requestJson(`/devices/requests/${id}/reject`, {
+    method: 'POST',
     withAuth: true,
   });
 }

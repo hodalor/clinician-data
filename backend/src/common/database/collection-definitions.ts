@@ -105,6 +105,34 @@ export const collectionDefinitions: CollectionDefinition[] = [
     ],
   },
   {
+    name: 'device_requests',
+    validator: {
+      $jsonSchema: {
+        bsonType: 'object',
+        required: ['user_id', 'requested_device_id', 'requested_at', 'status'],
+        properties: {
+          user_id: { bsonType: 'objectId' },
+          requested_device_id: { bsonType: 'string' },
+          requested_at: { bsonType: 'date' },
+          status: { enum: ['pending', 'approved', 'rejected'] },
+        },
+      },
+    },
+    indexes: [
+      {
+        key: { user_id: 1, requested_device_id: 1 },
+        options: {
+          unique: true,
+          name: 'uq_device_requests_user_id_requested_device_id',
+        },
+      },
+      {
+        key: { status: 1, requested_at: -1 },
+        options: { name: 'idx_device_requests_status_requested_at' },
+      },
+    ],
+  },
+  {
     name: 'refresh_tokens',
     validator: {
       $jsonSchema: {

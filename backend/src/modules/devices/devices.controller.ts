@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from '../../common/auth/current-user.decorator.js';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard.js';
 import { Roles } from '../../common/auth/roles.decorator.js';
@@ -30,6 +38,15 @@ export class DevicesController {
     return this.devicesService.listDevices(user);
   }
 
+  @Get('requests')
+  @Roles('ADMIN')
+  listDeviceRequests(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('status') status?: string,
+  ) {
+    return this.devicesService.listDeviceRequests(user, status ?? 'pending');
+  }
+
   @Post(':id/deactivate')
   @Roles('ADMIN')
   deactivateDevice(
@@ -46,5 +63,23 @@ export class DevicesController {
     @Body() payload: { user_id: string; device_id: string },
   ) {
     return this.devicesService.authoriseReplacement(user, payload);
+  }
+
+  @Post('requests/:id/approve')
+  @Roles('ADMIN')
+  approveDeviceRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.devicesService.approveDeviceRequest(user, id);
+  }
+
+  @Post('requests/:id/reject')
+  @Roles('ADMIN')
+  rejectDeviceRequest(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.devicesService.rejectDeviceRequest(user, id);
   }
 }

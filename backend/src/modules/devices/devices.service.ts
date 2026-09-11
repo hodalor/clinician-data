@@ -11,6 +11,7 @@ import type { Model } from 'mongoose';
 import { isAdminRole } from '../../common/auth/role-access.util.js';
 import type { AuthenticatedUser } from '../../common/auth/authenticated-user.interface.js';
 import { DeviceModelName } from './schemas/device.schema.js';
+import { DeviceRequestModelName } from './schemas/device-request.schema.js';
 import type { RegisterDeviceDto } from './dto/register-device.dto.js';
 import { UserModelName } from '../users/schemas/user.schema.js';
 
@@ -31,11 +32,22 @@ type UserRecord = {
   status: string;
 };
 
+type DeviceRequestRecord = {
+  _id: Types.ObjectId;
+  user_id: Types.ObjectId;
+  requested_device_id: string;
+  requested_at: Date;
+  status: 'pending' | 'approved' | 'rejected';
+  save: () => Promise<DeviceRequestRecord>;
+};
+
 @Injectable()
 export class DevicesService {
   constructor(
     @InjectModel(DeviceModelName)
     private readonly deviceModel: Model<DeviceRecord>,
+    @InjectModel(DeviceRequestModelName)
+    private readonly deviceRequestModel: Model<DeviceRequestRecord>,
     @InjectModel(UserModelName)
     private readonly userModel: Model<UserRecord>,
   ) {}
@@ -135,6 +147,39 @@ export class DevicesService {
     };
   }
 
+  async listDeviceRequests(user: AuthenticatedUser, status = 'pending') {
+    this.assertAdmin(user);
+    const query: Record<string, unknown> = {};
+
+    if (status.trim().length > 0) {
+      query.status = this.readRequestStatus(status);
+    }
+
+    const requests = await this.deviceRequestModel
+      .find(query)
+      .sort({ requested_at: -1, _id: -1 })
+      .lean();
+    const users = await this.userModel
+      .find({ _id: { $in: requests.map((request) => request.user_id) } })
+      .lean();
+    const userMap = new Map(
+      users.map((entry) => [entry._id.toString(), entry]),
+    );
+
+    return {
+      data: requests.map((request) => ({
+        id: request._id.toString(),
+        user_id: request.user_id.toString(),
+        user_name:
+          userMap.get(request.user_id.toString())?.full_name ?? 'Unknown user',
+        user_email: userMap.get(request.user_id.toString())?.email ?? null,
+        requested_device_id: request.requested_device_id,
+        requested_at: request.requested_at,
+        status: request.status,
+      })),
+    };
+  }
+
   async deactivateDevice(user: AuthenticatedUser, id: string) {
     this.assertAdmin(user);
     const device = await this.deviceModel.findById(this.toObjectId(id)).exec();
@@ -151,6 +196,120 @@ export class DevicesService {
       device_id: device.device_id,
       authorised: device.authorised,
       deactivated_at: device.deactivated_at,
+    };
+  }
+
+  async approveDeviceRequest(user: AuthenticatedUser, id: string) {
+    this.assertAdmin(user);
+    const request = await this.deviceRequestModel
+      .findById(this.toObjectId(id))
+      .exec();
+
+    if (!request) {
+      throw new NotFoundException('Device request not found');
+    }
+
+    if (request.status !== 'pending') {
+      throw new ConflictException('Only pending requests can be approved');
+    }
+
+    const targetUser = await this.userModel.findById(request.user_id).lean();
+
+    if (!targetUser) {
+      throw new NotFoundException('Target user not found');
+    }
+
+    if (targetUser.role !== 'RA') {
+      throw new ConflictException('Only RA device requests can be approved');
+    }
+
+    const now = new Date();
+
+    await this.deviceModel.updateMany(
+      {
+        user_id: request.user_id,
+        device_id: { $ne: request.requested_device_id },
+        authorised: true,
+        deactivated_at: null,
+      },
+      {
+        $set: {
+          authorised: false,
+          deactivated_at: now,
+        },
+      },
+    );
+
+    const existingDevice = await this.deviceModel
+      .findOne({
+        user_id: request.user_id,
+        device_id: request.requested_device_id,
+      })
+      .exec();
+
+    if (existingDevice) {
+      existingDevice.authorised = true;
+      existingDevice.deactivated_at = null;
+      existingDevice.last_seen_at = now;
+      await existingDevice.save();
+    } else {
+      await this.deviceModel.create({
+        user_id: request.user_id,
+        device_id: request.requested_device_id,
+        authorised: true,
+        deactivated_at: null,
+        last_seen_at: now,
+      });
+    }
+
+    request.status = 'approved';
+    await request.save();
+
+    await this.deviceRequestModel.updateMany(
+      {
+        user_id: request.user_id,
+        status: 'pending',
+        _id: { $ne: request._id },
+      },
+      {
+        $set: {
+          status: 'rejected',
+        },
+      },
+    );
+
+    return {
+      id: request._id.toString(),
+      status: request.status,
+      user_id: request.user_id.toString(),
+      requested_device_id: request.requested_device_id,
+      requested_at: request.requested_at,
+    };
+  }
+
+  async rejectDeviceRequest(user: AuthenticatedUser, id: string) {
+    this.assertAdmin(user);
+    const request = await this.deviceRequestModel
+      .findById(this.toObjectId(id))
+      .exec();
+
+    if (!request) {
+      throw new NotFoundException('Device request not found');
+    }
+
+    if (request.status !== 'pending') {
+      throw new ConflictException('Only pending requests can be rejected');
+    }
+
+    request.status = 'rejected';
+    await request.save();
+
+    return {
+      id: request._id.toString(),
+      status: request.status,
+      user_id: request.user_id.toString(),
+      requested_device_id: request.requested_device_id,
+      requested_at: request.requested_at,
     };
   }
 
@@ -216,6 +375,16 @@ export class DevicesService {
     }
 
     return value.trim();
+  }
+
+  private readRequestStatus(value: string) {
+    if (value === 'pending' || value === 'approved' || value === 'rejected') {
+      return value;
+    }
+
+    throw new BadRequestException(
+      'status must be one of pending, approved, rejected',
+    );
   }
 
   private toObjectId(value: string) {

@@ -7,6 +7,10 @@ import {
   DeviceModelName,
   DeviceSchema,
 } from '../devices/schemas/device.schema.js';
+import {
+  DeviceRequestModelName,
+  DeviceRequestSchema,
+} from '../devices/schemas/device-request.schema.js';
 import { UserModelName, UserSchema } from '../users/schemas/user.schema.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
@@ -21,6 +25,7 @@ import {
     MongooseModule.forFeature([
       { name: UserModelName, schema: UserSchema },
       { name: DeviceModelName, schema: DeviceSchema },
+      { name: DeviceRequestModelName, schema: DeviceRequestSchema },
       { name: RefreshTokenModelName, schema: RefreshTokenSchema },
     ]),
   ],

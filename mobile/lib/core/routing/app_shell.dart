@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/providers/auth_providers.dart';
 import '../../features/auth/screens/login_screen.dart';
+import '../../features/auth/screens/pending_approval_screen.dart';
 import '../../features/auth/screens/session_unlock_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/sync/providers/sync_providers.dart';
@@ -49,6 +50,8 @@ class _AppShellState extends ConsumerState<AppShell>
         );
       case AuthPhase.loggedOut:
         return const LoginScreen();
+      case AuthPhase.pendingApproval:
+        return const PendingApprovalScreen();
       case AuthPhase.locked:
         return const SessionUnlockScreen();
       case AuthPhase.authenticated:

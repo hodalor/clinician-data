@@ -11,7 +11,6 @@ import { RecordDetailPage } from '../features/records/record-detail-page';
 import { RecordsPage } from '../features/records/records-page';
 import { DuplicatesPage } from '../features/duplicates/duplicates-page';
 import { MissingnessPage } from '../features/missingness/missingness-page';
-import { DeviceReplacementPage } from '../features/devices/device-replacement-page';
 import { UserFormPage } from '../features/users/user-form-page';
 import { UsersPage } from '../features/users/users-page';
 import { DevicesPage } from '../features/devices/devices-page';
@@ -83,7 +82,6 @@ export const appRouter = createBrowserRouter([
               { path: '/users/new', element: <UserFormPage /> },
               { path: '/users/:userId/edit', element: <UserFormPage /> },
               { path: '/devices', element: <DevicesPage /> },
-              { path: '/devices/replacement', element: <DeviceReplacementPage /> },
             ],
           },
         ],

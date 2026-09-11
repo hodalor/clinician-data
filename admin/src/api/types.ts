@@ -246,3 +246,17 @@ export interface DeviceSummary {
 export interface DeviceListResponse {
   data: DeviceSummary[];
 }
+
+export interface DeviceRequestSummary {
+  id: string;
+  user_id: string;
+  user_name: string;
+  user_email: string | null;
+  requested_device_id: string;
+  requested_at: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface DeviceRequestListResponse {
+  data: DeviceRequestSummary[];
+}

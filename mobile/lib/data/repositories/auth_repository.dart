@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../local/auth_session_storage.dart';
+import '../models/auth_login_result.dart';
 import '../models/auth_session.dart';
 import '../remote/auth_api.dart';
 
@@ -13,19 +14,26 @@ class AuthRepository {
   final AuthApi _authApi;
   final AuthSessionStorage _sessionStorage;
 
-  Future<AuthSession> login({
+  Future<AuthLoginResult> login({
     required String email,
     required String password,
+    bool isApprovalPoll = false,
   }) async {
     final deviceId = await _sessionStorage.readOrCreateDeviceId();
-    final session = await _authApi.login(
+    final result = await _authApi.login(
       email: email,
       password: password,
       deviceId: deviceId,
+      isApprovalPoll: isApprovalPoll,
     );
-    await _authApi.registerDevice(session: session);
-    await _sessionStorage.writeSession(session);
-    return session;
+
+    if (result.status == AuthLoginStatus.authenticated && result.session != null) {
+      final session = result.session!;
+      await _authApi.registerDevice(session: session);
+      await _sessionStorage.writeSession(session);
+    }
+
+    return result;
   }
 
   Future<AuthSession?> refresh() async {
