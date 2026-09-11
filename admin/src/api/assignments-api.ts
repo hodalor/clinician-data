@@ -3,6 +3,7 @@ import type {
   AssignmentDetailResponse,
   AssignmentOptionsResponse,
   AssignmentSummary,
+  DeletePayload,
   UpsertAssignmentPayload,
 } from './types';
 
@@ -35,6 +36,14 @@ export function createAssignment(payload: UpsertAssignmentPayload) {
 export function updateAssignment(id: string, payload: UpsertAssignmentPayload) {
   return requestJson<{ assignment: AssignmentSummary }>(`/assignments/${id}`, {
     method: 'PUT',
+    body: payload,
+    withAuth: true,
+  });
+}
+
+export function deleteAssignment(id: string, payload: DeletePayload) {
+  return requestJson(`/assignments/${id}/delete`, {
+    method: 'POST',
     body: payload,
     withAuth: true,
   });

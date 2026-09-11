@@ -1,16 +1,21 @@
 import { Button, Group, Paper, Select, Stack, Table, Text, TextInput, Title } from '@mantine/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import {
   approveDeviceRequest,
+  deleteDevice,
   deactivateDevice,
   listDeviceRequests,
   listDevices,
   rejectDeviceRequest,
 } from '../../api/devices-api';
+import { DeleteConfirmModal } from '../../components/delete-confirm-modal';
 import { ListPageLayout } from '../../components/list-page-layout';
 
 export function DevicesPage() {
   const queryClient = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
+  const [deleteReason, setDeleteReason] = useState('');
   const { data, isLoading } = useQuery({
     queryKey: ['devices'],
     queryFn: listDevices,
@@ -39,6 +44,18 @@ export function DevicesPage() {
     mutationFn: rejectDeviceRequest,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['device-requests'] });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      deleteDevice(id, { reason }),
+    onSuccess: async () => {
+      setDeleteTarget(null);
+      setDeleteReason('');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['devices'] }),
+        queryClient.invalidateQueries({ queryKey: ['superbin'] }),
+      ]);
     },
   });
 
@@ -159,17 +176,36 @@ export function DevicesPage() {
             lastSeen: device.last_seen_at
               ? new Date(device.last_seen_at).toLocaleString()
               : 'Never',
-            actions: device.authorised ? (
-              <Button
-                size="sm"
-                variant="outline"
-                color="red"
-                onClick={() => deactivateMutation.mutate(device.id)}
-              >
-                Deactivate
-              </Button>
-            ) : (
-              'Inactive'
+            actions: (
+              <Group gap="xs">
+                {device.authorised ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    color="red"
+                    onClick={() => deactivateMutation.mutate(device.id)}
+                  >
+                    Deactivate
+                  </Button>
+                ) : (
+                  <Text size="sm" c="dimmed">
+                    Inactive
+                  </Text>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  color="red"
+                  onClick={() =>
+                    setDeleteTarget({
+                      id: device.id,
+                      label: formatDeviceLabel(index),
+                    })
+                  }
+                >
+                  Delete
+                </Button>
+              </Group>
             ),
           },
         }))}
@@ -180,6 +216,23 @@ export function DevicesPage() {
             <Select label="Authorised" placeholder="All" data={['Yes', 'No']} />
           </Group>
         }
+      />
+      <DeleteConfirmModal
+        opened={deleteTarget !== null}
+        onClose={() => {
+          setDeleteTarget(null);
+          setDeleteReason('');
+        }}
+        title="Delete device"
+        description={`This will move ${deleteTarget?.label ?? 'this device'} to the superbin first.`}
+        reason={deleteReason}
+        onReasonChange={setDeleteReason}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate({ id: deleteTarget.id, reason: deleteReason });
+          }
+        }}
+        loading={deleteMutation.isPending}
       />
     </Stack>
   );

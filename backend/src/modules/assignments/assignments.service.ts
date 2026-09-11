@@ -26,6 +26,9 @@ type AssignmentRecord = {
   file_ranges: string[];
   status: string;
   created_at: Date;
+  deleted_at?: Date | null;
+  deleted_by?: Types.ObjectId | null;
+  delete_reason?: string | null;
 };
 
 type UserRecord = {
@@ -73,6 +76,7 @@ export class AssignmentsService {
         'date_range.from': { $lte: now },
         'date_range.to': { $gte: now },
         status: { $regex: /^active$/i },
+        deleted_at: null,
       })
       .sort({ created_at: -1, _id: -1 })
       .lean();
@@ -96,7 +100,7 @@ export class AssignmentsService {
     this.assertPiOrAdmin(user);
 
     const assignments = await this.assignmentModel
-      .find({})
+      .find({ deleted_at: null })
       .sort({ created_at: -1, _id: -1 })
       .lean();
 
@@ -142,6 +146,7 @@ export class AssignmentsService {
       .find({
         role: { $in: ['RA', 'PI'] },
         status: 'active',
+        deleted_at: null,
       })
       .sort({ full_name: 1, email: 1 })
       .lean();
@@ -168,7 +173,7 @@ export class AssignmentsService {
     this.assertPiOrAdmin(user);
 
     const assignment = await this.assignmentModel
-      .findById(this.toObjectId(id))
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
       .lean();
 
     if (!assignment) {
@@ -246,7 +251,7 @@ export class AssignmentsService {
     this.assertPiOrAdmin(user);
 
     const assignment = await this.assignmentModel
-      .findById(this.toObjectId(id))
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
       .exec();
 
     if (!assignment) {
@@ -267,6 +272,32 @@ export class AssignmentsService {
         id: assignment._id.toString(),
         ...this.serializeAssignmentDocument(assignment.toObject()),
       },
+    };
+  }
+
+  async softDeleteAssignment(
+    user: AuthenticatedUser,
+    id: string,
+    reason: string,
+  ) {
+    this.assertPiOrAdmin(user);
+    const assignment = await this.assignmentModel
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
+      .exec();
+
+    if (!assignment) {
+      throw new NotFoundException('Assignment not found');
+    }
+
+    assignment.deleted_at = new Date();
+    assignment.deleted_by = new Types.ObjectId(user.userId);
+    assignment.delete_reason = this.readRequiredString(reason, 'reason');
+    await assignment.save();
+
+    return {
+      id: assignment._id.toString(),
+      deleted_at: assignment.deleted_at,
+      delete_reason: assignment.delete_reason,
     };
   }
 
@@ -306,8 +337,8 @@ export class AssignmentsService {
     }
 
     const [raUser, piUser] = await Promise.all([
-      this.userModel.findById(raId).lean(),
-      this.userModel.findById(piId).lean(),
+      this.userModel.findOne({ _id: raId, deleted_at: null }).lean(),
+      this.userModel.findOne({ _id: piId, deleted_at: null }).lean(),
     ]);
 
     if (!raUser || raUser.role !== 'RA' || raUser.status !== 'active') {
@@ -365,6 +396,7 @@ export class AssignmentsService {
     return this.recordModel
       .find({
         extractor_id: assignment.ra_id,
+        deleted_at: null,
         $or: [
           {
             'eligibility.ed_date': {
@@ -394,7 +426,9 @@ export class AssignmentsService {
       ),
     ).map((id) => new Types.ObjectId(id));
 
-    const users = await this.userModel.find({ _id: { $in: ids } }).lean();
+    const users = await this.userModel
+      .find({ _id: { $in: ids }, deleted_at: null })
+      .lean();
     return new Map(users.map((entry) => [entry._id.toString(), entry]));
   }
 

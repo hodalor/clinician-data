@@ -27,6 +27,7 @@ type UserRecord = {
   role: UserRole;
   full_name: string;
   status: string;
+  deleted_at?: Date | null;
 };
 
 type DeviceRecord = {
@@ -36,6 +37,7 @@ type DeviceRecord = {
   authorised: boolean;
   deactivated_at: Date | null;
   last_seen_at: Date | null;
+  deleted_at?: Date | null;
 };
 
 type RefreshTokenRecord = {
@@ -88,7 +90,7 @@ export class AuthService {
     const password = this.readRequiredString(loginDto.password, 'password');
     const deviceId = this.readOptionalDeviceId(deviceIdHeader);
 
-    const user = await this.userModel.findOne({ email }).exec();
+    const user = await this.userModel.findOne({ email, deleted_at: null }).exec();
 
     if (!user || user.status !== 'active') {
       throw new UnauthorizedException('Invalid email or password');
@@ -144,7 +146,9 @@ export class AuthService {
 
     this.assertRefreshSessionIsUsable(session, refreshToken);
 
-    const user = await this.userModel.findById(payload.sub).exec();
+    const user = await this.userModel
+      .findOne({ _id: payload.sub, deleted_at: null })
+      .exec();
 
     if (!user || user.status !== 'active') {
       throw new UnauthorizedException('User account is not active');
@@ -260,6 +264,7 @@ export class AuthService {
         user_id: user._id,
         authorised: true,
         deactivated_at: null,
+        deleted_at: null,
       })
       .sort({ last_seen_at: -1, _id: -1 })
       .exec();
@@ -345,6 +350,7 @@ export class AuthService {
       device_id: deviceId,
       authorised: true,
       deactivated_at: null,
+      deleted_at: null,
     });
 
     if (!activeDevice) {

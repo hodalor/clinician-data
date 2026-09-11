@@ -158,6 +158,9 @@ export const ResearchRecordSchema = new Schema(
     duplicate_flags: { type: [DuplicateFlagSchema], default: [] },
     created_at: { type: Date, required: true },
     updated_at: { type: Date, required: true },
+    deleted_at: { type: Date, default: null },
+    deleted_by: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    delete_reason: { type: String, trim: true, default: null },
   },
   {
     collection: 'research_records',

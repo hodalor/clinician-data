@@ -42,4 +42,13 @@ export class UsersController {
   ) {
     return this.usersService.updateUser(user, id, payload);
   }
+
+  @Post(':id/delete')
+  deleteUser(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() payload: { reason?: string },
+  ) {
+    return this.usersService.softDeleteUser(user, id, payload.reason ?? '');
+  }
 }

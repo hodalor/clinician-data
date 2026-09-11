@@ -56,6 +56,16 @@ export class DevicesController {
     return this.devicesService.deactivateDevice(user, id);
   }
 
+  @Post(':id/delete')
+  @Roles('ADMIN')
+  deleteDevice(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() payload: { reason?: string },
+  ) {
+    return this.devicesService.softDeleteDevice(user, id, payload.reason ?? '');
+  }
+
   @Post('authorise-replacement')
   @Roles('ADMIN')
   authoriseReplacement(

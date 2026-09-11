@@ -17,6 +17,7 @@ import { DevicesPage } from '../features/devices/devices-page';
 import { ExportPage } from '../features/export/export-page';
 import { AuditPage } from '../features/audit/audit-page';
 import { ManualPage } from '../features/manual/manual-page';
+import { SuperbinPage } from '../features/superbin/superbin-page';
 import { ProtectedRoute } from './protected-route';
 import { RoleRoute } from './role-route';
 
@@ -83,6 +84,10 @@ export const appRouter = createBrowserRouter([
               { path: '/users/:userId/edit', element: <UserFormPage /> },
               { path: '/devices', element: <DevicesPage /> },
             ],
+          },
+          {
+            element: <RoleRoute allowedRoles={['SUPERADMIN']} />,
+            children: [{ path: '/superbin', element: <SuperbinPage /> }],
           },
         ],
       },

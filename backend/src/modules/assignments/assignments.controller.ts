@@ -65,4 +65,18 @@ export class AssignmentsController {
   ) {
     return this.assignmentsService.updateAssignment(user, id, payload);
   }
+
+  @Post(':id/delete')
+  @Roles('PI', 'ADMIN')
+  deleteAssignment(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() payload: { reason?: string },
+  ) {
+    return this.assignmentsService.softDeleteAssignment(
+      user,
+      id,
+      payload.reason ?? '',
+    );
+  }
 }

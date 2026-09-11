@@ -22,6 +22,9 @@ export const AssignmentSchema = new Schema(
     file_ranges: [{ type: String }],
     status: { type: String, required: true, trim: true },
     created_at: { type: Date, required: true },
+    deleted_at: { type: Date, default: null },
+    deleted_by: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    delete_reason: { type: String, trim: true, default: null },
   },
   {
     collection: 'assignments',

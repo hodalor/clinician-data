@@ -1,5 +1,10 @@
 import { requestJson } from './http';
-import type { AuditHistoryResponse, RecordListItem, RecordListResponse } from './types';
+import type {
+  AuditHistoryResponse,
+  DeletePayload,
+  RecordListItem,
+  RecordListResponse,
+} from './types';
 
 export function listRecords(params?: Record<string, string | undefined>) {
   const queryString = new URLSearchParams();
@@ -31,6 +36,14 @@ export function reopenRecord(id: string, reason: string) {
   return requestJson<{ record: RecordListItem }>(`/records/${id}/reopen`, {
     method: 'POST',
     body: { reason },
+    withAuth: true,
+  });
+}
+
+export function deleteRecord(id: string, payload: DeletePayload) {
+  return requestJson(`/records/${id}/delete`, {
+    method: 'POST',
+    body: payload,
     withAuth: true,
   });
 }

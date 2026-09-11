@@ -25,6 +25,9 @@ type UserRecord = {
   full_name: string;
   status: 'active' | 'disabled';
   created_at: Date;
+  deleted_at?: Date | null;
+  deleted_by?: Types.ObjectId | null;
+  delete_reason?: string | null;
 };
 
 @Injectable()
@@ -36,7 +39,10 @@ export class UsersService {
 
   async listUsers(user: AuthenticatedUser) {
     this.assertAdmin(user);
-    const users = await this.userModel.find({}).sort({ created_at: -1 }).lean();
+    const users = await this.userModel
+      .find({ deleted_at: null })
+      .sort({ created_at: -1 })
+      .lean();
     return {
       data: users.map((entry) => this.serializeUser(entry)),
     };
@@ -61,7 +67,9 @@ export class UsersService {
     payload: UpsertUserDto,
   ) {
     this.assertAdmin(user);
-    const existing = await this.userModel.findById(this.toObjectId(id)).exec();
+    const existing = await this.userModel
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
+      .exec();
 
     if (!existing) {
       throw new NotFoundException('User not found');
@@ -79,6 +87,33 @@ export class UsersService {
 
     return {
       user: this.serializeUser(existing.toObject()),
+    };
+  }
+
+  async softDeleteUser(user: AuthenticatedUser, id: string, reason: string) {
+    this.assertAdmin(user);
+
+    if (user.userId === id) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+
+    const existing = await this.userModel
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
+      .exec();
+
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    existing.deleted_at = new Date();
+    existing.deleted_by = new Types.ObjectId(user.userId);
+    existing.delete_reason = this.readRequiredString(reason, 'reason');
+    await existing.save();
+
+    return {
+      id: existing._id.toString(),
+      deleted_at: existing.deleted_at,
+      delete_reason: existing.delete_reason,
     };
   }
 
@@ -111,7 +146,7 @@ export class UsersService {
       throw new BadRequestException('status must be active or disabled');
     }
 
-    const duplicate = await this.userModel.findOne({ email }).lean();
+    const duplicate = await this.userModel.findOne({ email, deleted_at: null }).lean();
     if (
       duplicate &&
       (!existing || duplicate._id.toString() !== existing._id.toString())
@@ -142,6 +177,8 @@ export class UsersService {
       full_name: entry.full_name,
       status: entry.status,
       created_at: entry.created_at,
+      deleted_at: entry.deleted_at ?? null,
+      delete_reason: entry.delete_reason ?? null,
     };
   }
 

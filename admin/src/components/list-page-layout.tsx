@@ -102,6 +102,11 @@ export function ListPageLayout({
           boxShadow: '0 24px 60px rgba(24, 18, 8, 0.08)',
         }}
       >
+        <Group justify="space-between" px="md" pt="md">
+          <Text size="sm" c="dimmed">
+            Tip: scroll sideways to see more columns.
+          </Text>
+        </Group>
         <Box style={{ overflowX: 'auto' }}>
         <Table
           striped
@@ -112,7 +117,11 @@ export function ListPageLayout({
           <Table.Thead>
             <Table.Tr>
               {columns.map((column) => (
-                <Table.Th key={column.key}>{column.label}</Table.Th>
+                <Table.Th key={column.key}>
+                  <Text tt="uppercase" fw={800} size="xs">
+                    {column.label}
+                  </Text>
+                </Table.Th>
               ))}
             </Table.Tr>
           </Table.Thead>

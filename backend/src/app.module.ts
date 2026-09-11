@@ -16,6 +16,7 @@ import { QcModule } from './modules/qc/qc.module.js';
 import { SyncModule } from './modules/sync/sync.module.js';
 import { ExportModule } from './modules/export/export.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
+import { SuperbinModule } from './modules/superbin/superbin.module.js';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { AuditModule } from './modules/audit/audit.module.js';
     SyncModule,
     ExportModule,
     AuditModule,
+    SuperbinModule,
   ],
   providers: [
     {

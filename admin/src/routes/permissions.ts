@@ -18,6 +18,7 @@ export const navItems: NavItem[] = [
   { label: 'Users', path: '/users', roles: ['ADMIN'] },
   { label: 'Devices', path: '/devices', roles: ['ADMIN'] },
   { label: 'Audit', path: '/audit', roles: ['PI', 'ADMIN'] },
+  { label: 'Superbin', path: '/superbin', roles: ['SUPERADMIN'] },
 ];
 
 export function canAccess(role: UserRole | undefined, allowedRoles: UserRole[]) {

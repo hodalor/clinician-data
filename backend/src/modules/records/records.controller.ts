@@ -96,4 +96,14 @@ export class RecordsController {
   ) {
     return this.recordsService.reopenLockedRecord(id, user, payload.reason);
   }
+
+  @Post(':id/delete')
+  @Roles('PI', 'ADMIN')
+  deleteRecord(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() payload: { reason?: string },
+  ) {
+    return this.recordsService.softDeleteRecord(id, user, payload.reason ?? '');
+  }
 }

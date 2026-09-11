@@ -22,6 +22,9 @@ type DeviceRecord = {
   authorised: boolean;
   deactivated_at: Date | null;
   last_seen_at: Date | null;
+  deleted_at?: Date | null;
+  deleted_by?: Types.ObjectId | null;
+  delete_reason?: string | null;
 };
 
 type UserRecord = {
@@ -30,6 +33,7 @@ type UserRecord = {
   full_name: string;
   role: string;
   status: string;
+  deleted_at?: Date | null;
 };
 
 type DeviceRequestRecord = {
@@ -74,6 +78,7 @@ export class DevicesService {
           user_id: new Types.ObjectId(user.userId),
           authorised: true,
           deactivated_at: null,
+        deleted_at: null,
         })
         .exec();
 
@@ -90,6 +95,9 @@ export class DevicesService {
     });
 
     if (existingDevice) {
+      existingDevice.deleted_at = null;
+      existingDevice.deleted_by = null;
+      existingDevice.delete_reason = null;
       existingDevice.authorised = true;
       existingDevice.deactivated_at = null;
       existingDevice.last_seen_at = now;
@@ -122,11 +130,14 @@ export class DevicesService {
   async listDevices(user: AuthenticatedUser) {
     this.assertAdmin(user);
     const devices = await this.deviceModel
-      .find({})
+      .find({ deleted_at: null })
       .sort({ last_seen_at: -1 })
       .lean();
     const users = await this.userModel
-      .find({ _id: { $in: devices.map((device) => device.user_id) } })
+      .find({
+        _id: { $in: devices.map((device) => device.user_id) },
+        deleted_at: null,
+      })
       .lean();
     const userMap = new Map(
       users.map((entry) => [entry._id.toString(), entry]),
@@ -182,7 +193,9 @@ export class DevicesService {
 
   async deactivateDevice(user: AuthenticatedUser, id: string) {
     this.assertAdmin(user);
-    const device = await this.deviceModel.findById(this.toObjectId(id)).exec();
+    const device = await this.deviceModel
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
+      .exec();
 
     if (!device) {
       throw new NotFoundException('Device not found');
@@ -196,6 +209,28 @@ export class DevicesService {
       device_id: device.device_id,
       authorised: device.authorised,
       deactivated_at: device.deactivated_at,
+    };
+  }
+
+  async softDeleteDevice(user: AuthenticatedUser, id: string, reason: string) {
+    this.assertAdmin(user);
+    const device = await this.deviceModel
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
+      .exec();
+
+    if (!device) {
+      throw new NotFoundException('Device not found');
+    }
+
+    device.deleted_at = new Date();
+    device.deleted_by = new Types.ObjectId(user.userId);
+    device.delete_reason = this.readRequiredString(reason, 'reason');
+    await device.save();
+
+    return {
+      id: device._id.toString(),
+      deleted_at: device.deleted_at,
+      delete_reason: device.delete_reason,
     };
   }
 
@@ -213,7 +248,9 @@ export class DevicesService {
       throw new ConflictException('Only pending requests can be approved');
     }
 
-    const targetUser = await this.userModel.findById(request.user_id).lean();
+    const targetUser = await this.userModel
+      .findOne({ _id: request.user_id, deleted_at: null })
+      .lean();
 
     if (!targetUser) {
       throw new NotFoundException('Target user not found');
@@ -231,6 +268,7 @@ export class DevicesService {
         device_id: { $ne: request.requested_device_id },
         authorised: true,
         deactivated_at: null,
+        deleted_at: null,
       },
       {
         $set: {
@@ -248,6 +286,9 @@ export class DevicesService {
       .exec();
 
     if (existingDevice) {
+      existingDevice.deleted_at = null;
+      existingDevice.deleted_by = null;
+      existingDevice.delete_reason = null;
       existingDevice.authorised = true;
       existingDevice.deactivated_at = null;
       existingDevice.last_seen_at = now;
@@ -323,7 +364,9 @@ export class DevicesService {
     );
     const deviceId = this.readRequiredString(payload.device_id, 'device_id');
     const now = new Date();
-    const targetUser = await this.userModel.findById(targetUserId).lean();
+    const targetUser = await this.userModel
+      .findOne({ _id: targetUserId, deleted_at: null })
+      .lean();
 
     if (!targetUser) {
       throw new NotFoundException('Target user not found');
@@ -335,6 +378,9 @@ export class DevicesService {
     });
 
     if (existing) {
+      existing.deleted_at = null;
+      existing.deleted_by = null;
+      existing.delete_reason = null;
       existing.authorised = true;
       existing.deactivated_at = null;
       existing.last_seen_at = now;

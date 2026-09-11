@@ -10,6 +10,7 @@ import { Types } from 'mongoose';
 import type { Model } from 'mongoose';
 import {
   isAdminRole,
+  isPiOrAdminRole,
   isPiRole,
 } from '../../common/auth/role-access.util.js';
 import type { AuthenticatedUser } from '../../common/auth/authenticated-user.interface.js';
@@ -35,6 +36,7 @@ type AssignmentRecord = {
     to: Date;
   };
   status: string;
+  deleted_at?: Date | null;
 };
 
 type OutcomeRecord = {
@@ -61,6 +63,7 @@ type UserRecord = {
   _id: Types.ObjectId;
   full_name: string;
   email: string;
+  deleted_at?: Date | null;
 };
 
 type RecordListQuery = {
@@ -196,6 +199,7 @@ export class RecordsService {
     const users = await this.userModel
       .find({
         _id: { $in: entries.map((entry) => entry.changed_by).filter(Boolean) },
+        deleted_at: null,
       })
       .lean();
     const userMap = new Map(
@@ -337,7 +341,9 @@ export class RecordsService {
       throw new BadRequestException('reason is required');
     }
 
-    const record = await this.recordModel.findById(this.toObjectId(id)).exec();
+    const record = await this.recordModel
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
+      .exec();
 
     if (!record) {
       throw new NotFoundException('Record not found');
@@ -362,6 +368,41 @@ export class RecordsService {
     };
   }
 
+  async softDeleteRecord(
+    id: string,
+    user: AuthenticatedUser,
+    reason: string,
+  ) {
+    if (!isPiOrAdminRole(user.role)) {
+      throw new ForbiddenException(
+        'Only PI and ADMIN users may delete records',
+      );
+    }
+
+    if (!this.isNonEmptyString(reason)) {
+      throw new BadRequestException('reason is required');
+    }
+
+    const record = await this.recordModel
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
+      .exec();
+
+    if (!record) {
+      throw new NotFoundException('Record not found');
+    }
+
+    record.deleted_at = new Date();
+    record.deleted_by = new Types.ObjectId(user.userId);
+    record.delete_reason = reason.trim();
+    await record.save();
+
+    return {
+      id: record._id.toString(),
+      deleted_at: record.deleted_at,
+      delete_reason: record.delete_reason,
+    };
+  }
+
   private async ensureRaHasActiveAssignment(userId: string) {
     const now = new Date();
     const activeAssignment = await this.assignmentModel
@@ -370,6 +411,7 @@ export class RecordsService {
         'date_range.from': { $lte: now },
         'date_range.to': { $gte: now },
         status: { $regex: /^active$/i },
+        deleted_at: null,
       })
       .lean();
 
@@ -381,7 +423,9 @@ export class RecordsService {
   }
 
   private async getOwnedEditableRecord(id: string, user: AuthenticatedUser) {
-    const record = await this.recordModel.findById(this.toObjectId(id)).exec();
+    const record = await this.recordModel
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
+      .exec();
 
     if (!record) {
       throw new NotFoundException('Record not found');
@@ -409,7 +453,9 @@ export class RecordsService {
   }
 
   private async findRecordById(id: string) {
-    const record = await this.recordModel.findById(this.toObjectId(id)).lean();
+    const record = await this.recordModel
+      .findOne({ _id: this.toObjectId(id), deleted_at: null })
+      .lean();
 
     if (!record) {
       throw new NotFoundException('Record not found');
@@ -422,7 +468,9 @@ export class RecordsService {
     user: AuthenticatedUser,
     query: RecordListQuery,
   ) {
-    const filter: Record<string, unknown> = {};
+    const filter: Record<string, unknown> = {
+      deleted_at: null,
+    };
 
     if (user.role === 'RA') {
       filter.extractor_id = new Types.ObjectId(user.userId);
@@ -446,7 +494,7 @@ export class RecordsService {
 
     if (query.assignment_id) {
       const assignment = await this.assignmentModel
-        .findById(this.toObjectId(query.assignment_id))
+        .findOne({ _id: this.toObjectId(query.assignment_id), deleted_at: null })
         .lean();
 
       if (!assignment) {

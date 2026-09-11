@@ -9,6 +9,9 @@ export const DeviceSchema = new Schema(
     authorised: { type: Boolean, required: true },
     deactivated_at: { type: Date, default: null },
     last_seen_at: { type: Date, default: null },
+    deleted_at: { type: Date, default: null },
+    deleted_by: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    delete_reason: { type: String, trim: true, default: null },
   },
   {
     collection: 'devices',

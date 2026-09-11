@@ -57,6 +57,8 @@ export interface AssignmentSummary {
   status: string;
   progress: AssignmentProgress;
   created_at: string;
+  deleted_at?: string | null;
+  delete_reason?: string | null;
 }
 
 export interface AssignmentDetailResponse {
@@ -101,6 +103,8 @@ export interface RecordListItem {
   version?: number;
   updated_at?: string;
   created_at?: string;
+  deleted_at?: string | null;
+  delete_reason?: string | null;
   eligibility?: Record<string, unknown>;
   patient?: Record<string, unknown>;
   sats?: Record<string, unknown>;
@@ -235,6 +239,8 @@ export interface UserSummary {
   full_name: string;
   status: 'active' | 'disabled';
   created_at: string;
+  deleted_at?: string | null;
+  delete_reason?: string | null;
 }
 
 export interface UserListResponse {
@@ -258,6 +264,26 @@ export interface DeviceSummary {
   authorised: boolean;
   deactivated_at: string | null;
   last_seen_at: string | null;
+  deleted_at?: string | null;
+  delete_reason?: string | null;
+}
+
+export interface DeletePayload {
+  reason: string;
+}
+
+export interface SuperbinItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  detail: string;
+  deleted_at: string | null;
+  delete_reason: string | null;
+}
+
+export interface SuperbinResponse {
+  data: SuperbinItem[];
 }
 
 export interface DeviceListResponse {

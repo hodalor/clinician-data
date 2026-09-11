@@ -420,28 +420,41 @@ class _RaHomeTab extends StatelessWidget {
                   if (records.isEmpty) {
                     return const Text('No records yet.');
                   }
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      columnSpacing: 20,
-                      columns: const [
-                        DataColumn(label: Text('Study ID')),
-                        DataColumn(label: Text('Status')),
-                        DataColumn(label: Text('Sync')),
-                      ],
-                      rows: records
-                          .take(5)
-                          .map(
-                            (record) => DataRow(
-                              cells: [
-                                DataCell(Text(record.studyId)),
-                                DataCell(Text(record.status)),
-                                DataCell(Text(_syncLabel(record.syncState))),
-                              ],
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Swipe sideways to see more columns.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: const Color(0xFF7D6842),
+                              fontWeight: FontWeight.w600,
                             ),
-                          )
-                          .toList(growable: false),
-                    ),
+                      ),
+                      const SizedBox(height: 8),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columnSpacing: 20,
+                          columns: const [
+                            DataColumn(label: _TableHeaderLabel('Study ID')),
+                            DataColumn(label: _TableHeaderLabel('Status')),
+                            DataColumn(label: _TableHeaderLabel('Sync')),
+                          ],
+                          rows: records
+                              .take(5)
+                              .map(
+                                (record) => DataRow(
+                                  cells: [
+                                    DataCell(Text(record.studyId)),
+                                    DataCell(Text(record.status)),
+                                    DataCell(Text(_syncLabel(record.syncState))),
+                                  ],
+                                ),
+                              )
+                              .toList(growable: false),
+                        ),
+                      ),
+                    ],
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -920,6 +933,14 @@ class _QueueTableScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Text(
+            'Swipe sideways to see more columns.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFF7D6842),
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -943,10 +964,10 @@ class _QueueTableScreen extends StatelessWidget {
                             showCheckboxColumn: false,
                             columnSpacing: 24,
                             columns: const [
-                              DataColumn(label: Text('Study ID')),
-                              DataColumn(label: Text('Status')),
-                              DataColumn(label: Text('Sync')),
-                              DataColumn(label: Text('Updated')),
+                              DataColumn(label: _TableHeaderLabel('Study ID')),
+                              DataColumn(label: _TableHeaderLabel('Status')),
+                              DataColumn(label: _TableHeaderLabel('Sync')),
+                              DataColumn(label: _TableHeaderLabel('Updated')),
                             ],
                             rows: records
                                 .map(
@@ -1050,6 +1071,24 @@ class _ProfileRow {
 
   final String label;
   final String value;
+}
+
+class _TableHeaderLabel extends StatelessWidget {
+  const _TableHeaderLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: _ink,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.7,
+          ),
+    );
+  }
 }
 
 class _QueueMenuItem {
