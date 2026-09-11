@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/routing/app_router.dart';
 import '../../../core/utils/record_constants.dart';
+import '../../../core/utils/record_labels.dart';
 import '../../../data/local/app_database.dart';
 import '../../../data/models/destination_option.dart';
 import '../../dashboard/providers/dashboard_providers.dart';
@@ -416,9 +417,9 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
             value: _draft.referral,
             hintText: 'Choose referral status',
             items: const [
-              DropdownMenuItem(value: '1', child: Text('Referred')),
-              DropdownMenuItem(value: '0', child: Text('Not referred')),
-              DropdownMenuItem(value: '9', child: Text('Not recorded')),
+              DropdownMenuItem(value: '0', child: Text('0 Direct')),
+              DropdownMenuItem(value: '1', child: Text('1 Referred')),
+              DropdownMenuItem(value: '9', child: Text('9 Unknown')),
             ],
             onChanged: (value) =>
                 _updateDraft(_draft.copyWith(referral: value)),
@@ -514,10 +515,10 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
             value: _draft.satsCat,
             hintText: 'Choose SATS category',
             items: const [
-              DropdownMenuItem(value: '1', child: Text('1 Red')),
-              DropdownMenuItem(value: '2', child: Text('2 Orange')),
-              DropdownMenuItem(value: '3', child: Text('3 Yellow')),
-              DropdownMenuItem(value: '4', child: Text('4 Green')),
+              DropdownMenuItem(value: '1', child: Text('1 Green')),
+              DropdownMenuItem(value: '2', child: Text('2 Yellow')),
+              DropdownMenuItem(value: '3', child: Text('3 Orange')),
+              DropdownMenuItem(value: '4', child: Text('4 Red')),
             ],
             onChanged: (value) => _updateDraft(_draft.copyWith(satsCat: value)),
           ),
@@ -776,22 +777,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           child: destinationsAsync.when(
             data: (destinations) {
               if (destinations.isEmpty) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Approved destination codes could not be loaded from the backend. Enter the approved code manually.',
-                    ),
-                    const SizedBox(height: 12),
-                    _LargeTextFormField(
-                      controller: _manualDestinationController,
-                      hintText: 'Enter destination code',
-                      onChanged: (value) => _updateDraft(
-                        _draft.copyWith(initialDestination: value),
-                      ),
-                    ),
-                  ],
-                );
+                return _buildManualDestinationFallback();
               }
 
               return _LargeDropdownField<String>(
@@ -810,12 +796,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, __) => _LargeTextFormField(
-              controller: _manualDestinationController,
-              hintText: 'Enter destination code',
-              onChanged: (value) =>
-                  _updateDraft(_draft.copyWith(initialDestination: value)),
-            ),
+            error: (_, __) => _buildManualDestinationFallback(),
           ),
         ),
       ],
@@ -867,10 +848,10 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
             value: _draft.outcome24,
             hintText: 'Choose 24-hour outcome',
             items: const [
-              DropdownMenuItem(value: '4', child: Text('Death')),
-              DropdownMenuItem(value: '3', child: Text('HDU / ICU')),
-              DropdownMenuItem(value: '2', child: Text('Ward')),
-              DropdownMenuItem(value: '1', child: Text('Discharge')),
+              DropdownMenuItem(value: '4', child: Text('4 Death')),
+              DropdownMenuItem(value: '3', child: Text('3 HDU / ICU')),
+              DropdownMenuItem(value: '2', child: Text('2 Ward')),
+              DropdownMenuItem(value: '1', child: Text('1 ED discharge')),
             ],
             onChanged: (value) =>
                 _updateDraft(_draft.copyWith(outcome24: value)),
@@ -931,13 +912,14 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
         if (!_draft.skipsClinicalSections) ...[
           _ReviewCard(
             title: 'Patient characteristics',
-            summary: 'Sex: ${_labelOrBlank(_draft.sex)}',
+            summary:
+                'Sex: ${decodeLabel(sexLabels, _draft.sex)} | Referral: ${decodeLabel(referralLabels, _draft.referral)}',
             onEdit: () => _jumpToStep(WizardStep.patient),
           ),
           _ReviewCard(
             title: 'SATS / TEWS',
             summary:
-                'SATS: ${_labelOrBlank(_draft.satsCat)} | TEWS: ${_labelOrBlank(_draft.tewsTotal?.toString())}',
+                'SATS: ${decodeLabel(satsCategoryLabels, _draft.satsCat)} | TEWS: ${_labelOrBlank(_draft.tewsTotal?.toString())}',
             onEdit: () => _jumpToStep(WizardStep.sats),
           ),
           _ReviewCard(
@@ -949,8 +931,8 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           _ReviewCard(
             title: 'Clinical presentation',
             summary: _draft.chiefComplaintVerbatim?.trim().isNotEmpty == true
-                ? _draft.chiefComplaintVerbatim!
-                : 'No complaint text entered',
+                ? '${_draft.chiefComplaintVerbatim!} | ${decodeLabel(complaintGroupLabels, _draft.complaintGroup)}'
+                : decodeLabel(complaintGroupLabels, _draft.complaintGroup),
             onEdit: () => _jumpToStep(WizardStep.presentation),
           ),
           _ReviewCard(
@@ -966,7 +948,8 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           ),
           _ReviewCard(
             title: '24-hour outcome',
-            summary: _labelOrBlank(_draft.outcome24),
+            summary:
+                '${decodeLabel(outcome24Labels, _draft.outcome24)} | ${decodeLabel(outcomeSourceLabels, _draft.outcomeSource)}',
             onEdit: () => _jumpToStep(WizardStep.outcome),
           ),
         ],
@@ -1057,52 +1040,29 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
   }
 
   String _discriminatorLabel(String code) {
-    switch (code) {
-      case '0':
-        return '0 No discriminator documented';
-      case '1':
-        return '1 Shock/uncontrolled haemorrhage';
-      case '2':
-        return '2 Chest pain/cardiovascular';
-      case '3':
-        return '3 Seizure/altered consciousness';
-      case '4':
-        return '4 Major trauma/fracture/dislocation';
-      case '5':
-        return '5 Penetrating injury';
-      case '6':
-        return '6 Burns';
-      case '7':
-        return '7 Poisoning/overdose';
-      case '8':
-        return '8 Hypoglycaemia';
-      case '9':
-        return '9 Hypertensive emergency';
-      case '10':
-        return '10 Respiratory distress/shortness of breath';
-      case '11':
-        return '11 Haemoptysis';
-      case '12':
-        return '12 Abdominal pain/trauma';
-      case '13':
-        return '13 Pregnancy-related emergency';
-      case '14':
-        return '14 Bradycardia';
-      case '15':
-        return '15 Controlled haemorrhage';
-      case '16':
-        return '16 Persistent vomiting';
-      case '17':
-        return '17 PV bleeding';
-      case '18':
-        return '18 Other documented discriminator';
-      default:
-        return code;
-    }
+    return decodeLabel(discriminatorTypeLabels, code);
   }
 
   String _labelOrBlank(String? value) =>
       value?.isNotEmpty == true ? value! : 'Not entered';
+
+  Widget _buildManualDestinationFallback() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'Approved destination codes could not be loaded from the backend. Enter the approved code manually.',
+        ),
+        const SizedBox(height: 12),
+        _LargeTextFormField(
+          controller: _manualDestinationController,
+          hintText: 'Enter destination code',
+          onChanged: (value) =>
+              _updateDraft(_draft.copyWith(initialDestination: value)),
+        ),
+      ],
+    );
+  }
 
   void _jumpToStep(WizardStep step) {
     setState(() {

@@ -44,8 +44,10 @@ Map<String, dynamic> buildRecordPayloadFromDraft(RaRecordDraft draft) {
       if (draft.tewsTotal != null) 'tews_total': draft.tewsTotal,
       if (draft.discriminatorYes != null)
         'discriminator_yes': draft.discriminatorYes,
-      if (draft.discriminatorType?.isNotEmpty == true)
+      if (draft.discriminatorYes == true &&
+          draft.discriminatorType?.isNotEmpty == true)
         'discriminator_type': draft.discriminatorType,
+      if (draft.discriminatorYes == false) 'discriminator_type': '0',
       if (draft.documentationComplete != null)
         'documentation_complete': draft.documentationComplete,
     },

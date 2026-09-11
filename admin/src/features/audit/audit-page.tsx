@@ -4,18 +4,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listAuditLogs } from '../../api/audit-api';
 import { ListPageLayout } from '../../components/list-page-layout';
-
-function formatValue(value: unknown) {
-  if (value === null || value === undefined) {
-    return 'Blank';
-  }
-
-  if (typeof value === 'object') {
-    return JSON.stringify(value);
-  }
-
-  return String(value);
-}
+import {
+  formatRecordFieldLabel,
+  formatRecordValue,
+} from '../records/record-decoders';
 
 export function AuditPage() {
   const [draftFilters, setDraftFilters] = useState({
@@ -72,14 +64,14 @@ export function AuditPage() {
           ) : (
             'Unknown record'
           ),
-          field: entry.field,
+          field: formatRecordFieldLabel(entry.field),
           change: (
             <Text size="sm">
-              {formatValue(entry.previous_value)}{' '}
+              {formatRecordValue(entry.field, entry.previous_value, 'Blank')}{' '}
               <Text component="span" inherit fw={600}>
                 to
               </Text>{' '}
-              {formatValue(entry.new_value)}
+              {formatRecordValue(entry.field, entry.new_value, 'Blank')}
             </Text>
           ),
           changedBy: entry.changed_by_name ?? 'Unknown user',

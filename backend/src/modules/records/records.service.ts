@@ -45,6 +45,9 @@ type OutcomeRecord = {
   outcome24?: string;
   outcome_datetime?: Date;
   outcome_source?: string;
+  verified?: boolean;
+  verified_by?: Types.ObjectId | null;
+  verified_at?: Date | null;
 };
 
 type AuditLogRecord = {
@@ -182,9 +185,24 @@ export class RecordsService {
   async getRecordById(id: string, user: AuthenticatedUser) {
     const record = await this.findRecordById(id);
     this.assertRecordReadableByUser(record, user);
+    const outcome = await this.outcomeModel
+      .findOne({ research_record_id: record._id })
+      .lean();
 
     return {
-      record,
+      record: {
+        ...record,
+        outcome: outcome
+          ? {
+              outcome24: outcome.outcome24 ?? null,
+              outcome_datetime: outcome.outcome_datetime ?? null,
+              outcome_source: outcome.outcome_source ?? null,
+              verified: outcome.verified ?? false,
+              verified_by: outcome.verified_by?.toString() ?? null,
+              verified_at: outcome.verified_at ?? null,
+            }
+          : null,
+      },
     };
   }
 
@@ -652,6 +670,25 @@ export class RecordsService {
     this.validateEnumField(normalized, 'physiology.avpu', errors);
     this.validateEnumField(normalized, 'physiology.trauma', errors);
     this.validateEnumField(normalized, 'presentation.complaint_group', errors);
+
+    const discriminatorYes = this.getValueAtPath(
+      normalized,
+      'sats.discriminator_yes',
+    );
+    const discriminatorType = this.getValueAtPath(
+      normalized,
+      'sats.discriminator_type',
+    );
+
+    if (
+      discriminatorType &&
+      discriminatorType !== '0' &&
+      discriminatorYes !== true
+    ) {
+      errors.push(
+        'sats.discriminator_type may only be non-zero when sats.discriminator_yes is true',
+      );
+    }
 
     this.validateNumericField(normalized, 'physiology.spo2', errors, {
       min: 0,

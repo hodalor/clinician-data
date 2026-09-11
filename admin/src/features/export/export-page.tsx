@@ -1,8 +1,8 @@
 import {
   Alert,
+  Box,
   Card,
   Group,
-  Image,
   Paper,
   Select,
   SimpleGrid,
@@ -15,6 +15,7 @@ import {
 import { notifications } from '@mantine/notifications';
 import { useState } from 'react';
 import { downloadExport } from '../../api/export-api';
+import { satsCategoryOptions } from '../records/record-decoders';
 
 type ExportFilters = {
   status: string;
@@ -38,7 +39,7 @@ type ExportItem = {
   label: string;
   fileName: string;
   helper: string;
-  imagePrompt: string;
+  icon: 'csv' | 'excel' | 'codebook' | 'qc' | 'missing' | 'exclusion' | 'progress';
 };
 
 const exportItems: ExportItem[] = [
@@ -47,71 +48,51 @@ const exportItems: ExportItem[] = [
     label: 'Master data CSV',
     fileName: 'master-data.csv',
     helper: 'Spreadsheet-ready text table',
-    imagePrompt:
-      'flat app icon, spreadsheet grid with green csv label, clean white background, premium macOS dock style, realistic glossy png icon',
+    icon: 'csv',
   },
   {
     endpoint: 'master.xlsx',
     label: 'Master data Excel',
     fileName: 'master-data.xlsx',
     helper: 'Main data table for Excel',
-    imagePrompt:
-      'flat app icon, excel workbook with tidy data grid, green and white palette, premium macOS dock style, realistic glossy png icon',
+    icon: 'excel',
   },
   {
     endpoint: 'codebook.xlsx',
     label: 'Codebook',
     fileName: 'codebook.xlsx',
     helper: 'Variables, labels, and codes',
-    imagePrompt:
-      'flat app icon, research codebook notebook with labeled rows and columns, blue and white palette, premium macOS dock style, realistic glossy png icon',
+    icon: 'codebook',
   },
   {
     endpoint: 'qc-report.xlsx',
     label: 'QC report',
     fileName: 'qc-report.xlsx',
     helper: 'Agreement and comparison tables',
-    imagePrompt:
-      'flat app icon, quality control checklist with comparison table, red and blue accents, premium macOS dock style, realistic glossy png icon',
+    icon: 'qc',
   },
   {
     endpoint: 'missing-data-report.xlsx',
     label: 'Missing-data report',
     fileName: 'missing-data-report.xlsx',
     helper: 'Missingness tables by RA and date',
-    imagePrompt:
-      'flat app icon, spreadsheet with highlighted empty cells, amber and white palette, premium macOS dock style, realistic glossy png icon',
+    icon: 'missing',
   },
   {
     endpoint: 'exclusion-log.xlsx',
     label: 'Exclusion log',
     fileName: 'exclusion-log.xlsx',
     helper: 'Excluded records in table form',
-    imagePrompt:
-      'flat app icon, clinical logbook with exclusion stamp and clean rows, charcoal and gold accents, premium macOS dock style, realistic glossy png icon',
+    icon: 'exclusion',
   },
   {
     endpoint: 'progress-report.xlsx',
     label: 'Progress report',
     fileName: 'progress-report.xlsx',
     helper: 'Study progress tables by status and RA',
-    imagePrompt:
-      'flat app icon, progress dashboard as simple table rows and totals, teal and white palette, premium macOS dock style, realistic glossy png icon',
+    icon: 'progress',
   },
 ];
-
-const satsCategoryOptions = [
-  { value: '1', label: '1 Red' },
-  { value: '2', label: '2 Orange' },
-  { value: '3', label: '3 Yellow' },
-  { value: '4', label: '4 Green' },
-];
-
-function buildIconUrl(prompt: string) {
-  return `https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=${encodeURIComponent(
-    prompt,
-  )}&image_size=square`;
-}
 
 export function ExportPage() {
   const [filters, setFilters] = useState<ExportFilters>({
@@ -256,13 +237,7 @@ export function ExportPage() {
           >
             <Card withBorder radius="lg" padding="md" h="100%">
               <Stack align="center" gap="sm">
-                <Image
-                  src={buildIconUrl(item.imagePrompt)}
-                  alt={item.label}
-                  w={88}
-                  h={88}
-                  radius="lg"
-                />
+                <ExportTileIcon type={item.icon} />
                 <Stack gap={2} align="center">
                   <Text fw={700} ta="center">
                     {item.label}
@@ -277,5 +252,45 @@ export function ExportPage() {
         ))}
       </SimpleGrid>
     </Stack>
+  );
+}
+
+function ExportTileIcon({ type }: { type: ExportItem['icon'] }) {
+  const palette = {
+    csv: { primary: '#2f9e44', accent: '#d3f9d8', label: 'CSV' },
+    excel: { primary: '#2b8a3e', accent: '#d8f5dc', label: 'XLSX' },
+    codebook: { primary: '#1c7ed6', accent: '#dbeafe', label: 'BOOK' },
+    qc: { primary: '#c92a2a', accent: '#ffe3e3', label: 'QC' },
+    missing: { primary: '#f08c00', accent: '#fff3bf', label: 'MISS' },
+    exclusion: { primary: '#495057', accent: '#f1f3f5', label: 'LOG' },
+    progress: { primary: '#0b7285', accent: '#d3f9fa', label: 'PROG' },
+  }[type];
+
+  return (
+    <Box
+      style={{
+        width: 88,
+        height: 88,
+        borderRadius: 20,
+        background: `linear-gradient(180deg, ${palette.accent}, #ffffff)`,
+        border: `1px solid ${palette.primary}33`,
+        boxShadow: '0 12px 24px rgba(20, 20, 20, 0.10)',
+        display: 'grid',
+        placeItems: 'center',
+      }}
+    >
+      <svg width="56" height="56" viewBox="0 0 96 96" role="img" aria-label={palette.label}>
+        <rect x="18" y="12" width="60" height="72" rx="12" fill="white" stroke={palette.primary} strokeWidth="4" />
+        <rect x="28" y="24" width="40" height="12" rx="6" fill={palette.primary} opacity="0.16" />
+        <rect x="28" y="42" width="16" height="10" rx="4" fill={palette.primary} opacity="0.2" />
+        <rect x="48" y="42" width="20" height="10" rx="4" fill={palette.primary} opacity="0.2" />
+        <rect x="28" y="56" width="16" height="10" rx="4" fill={palette.primary} opacity="0.2" />
+        <rect x="48" y="56" width="20" height="10" rx="4" fill={palette.primary} opacity="0.2" />
+        <rect x="24" y="68" width="48" height="10" rx="5" fill={palette.primary} />
+        <text x="48" y="76" textAnchor="middle" fontSize="11" fontWeight="700" fill="white">
+          {palette.label}
+        </text>
+      </svg>
+    </Box>
   );
 }

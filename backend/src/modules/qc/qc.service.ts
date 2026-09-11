@@ -11,6 +11,7 @@ import { isPiRole, isQcOrPiRole } from '../../common/auth/role-access.util.js';
 import type { AuthenticatedUser } from '../../common/auth/authenticated-user.interface.js';
 import { RecordsService } from '../records/records.service.js';
 import { ResearchRecordModelName } from '../records/schemas/research-record.schema.js';
+import { OutcomeModelName } from '../outcomes/schemas/outcome.schema.js';
 import { UserModelName } from '../users/schemas/user.schema.js';
 import type {
   QcAssignDto,
@@ -30,6 +31,14 @@ type UserRecord = {
 
 type QcReviewRecord = any;
 type RecordDocument = any;
+type OutcomeRecord = {
+  _id: Types.ObjectId;
+  research_record_id: Types.ObjectId;
+  outcome24?: string;
+  outcome_datetime?: Date;
+  outcome_source?: string;
+  verified?: boolean;
+};
 
 @Injectable()
 export class QcService {
@@ -38,6 +47,8 @@ export class QcService {
     private readonly recordModel: Model<RecordDocument>,
     @InjectModel(QcReviewModelName)
     private readonly qcReviewModel: Model<QcReviewRecord>,
+    @InjectModel(OutcomeModelName)
+    private readonly outcomeModel: Model<OutcomeRecord>,
     @InjectModel(UserModelName)
     private readonly userModel: Model<UserRecord>,
     private readonly recordsService: RecordsService,
@@ -166,16 +177,26 @@ export class QcService {
 
   async compareRecord(recordId: string, user: AuthenticatedUser) {
     const review = await this.getAssignedReview(recordId, user);
-    const record = await this.recordModel
-      .findById(this.recordsService.parseObjectId(recordId))
-      .lean();
+    const targetRecordId = this.recordsService.parseObjectId(recordId);
+    const [record, outcome] = await Promise.all([
+      this.recordModel.findById(targetRecordId).lean(),
+      this.outcomeModel
+        .findOne({ research_record_id: targetRecordId })
+        .lean(),
+    ]);
 
     if (!record) {
       throw new NotFoundException('Record not found');
     }
 
     const comparison = buildQcComparison(
-      record,
+      {
+        ...record,
+        outcome24: outcome?.outcome24 ?? null,
+        outcome_datetime: outcome?.outcome_datetime ?? null,
+        outcome_source: outcome?.outcome_source ?? null,
+        outcome_verified: outcome?.verified ?? false,
+      },
       review.re_abstracted_values ?? {},
     );
 

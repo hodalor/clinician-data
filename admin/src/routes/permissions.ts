@@ -13,6 +13,7 @@ export const navItems: NavItem[] = [
   { label: 'QC', path: '/qc', roles: ['QC', 'PI'] },
   { label: 'Duplicates', path: '/duplicates', roles: ['QC', 'PI'] },
   { label: 'Missingness', path: '/missingness', roles: ['PI', 'ADMIN'] },
+  { label: 'Destination Codes', path: '/destination-codes', roles: ['PI', 'ADMIN'] },
   { label: 'Export', path: '/export', roles: ['PI'] },
   { label: 'Manual', path: '/manual', roles: ['QC', 'PI', 'ADMIN'] },
   { label: 'Users', path: '/users', roles: ['ADMIN'] },

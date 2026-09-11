@@ -107,6 +107,27 @@ const assignmentDocs = [
   },
 ];
 
+const studyConfigurationDocs = [
+  {
+    key: 'initial_destination_codes',
+    values: [
+      { code: 'Resus', label: 'Resus' },
+      { code: 'Surgical ward', label: 'Surgical ward' },
+      { code: 'Medical ward', label: 'Medical ward' },
+      { code: 'Paediatric ward', label: 'Paediatric ward' },
+      { code: 'Obstetric/Gynae ward', label: 'Obstetric/Gynae ward' },
+      { code: 'ICU/HDU', label: 'ICU/HDU' },
+      { code: 'Operating theatre', label: 'Operating theatre' },
+      { code: 'Discharged home', label: 'Discharged home' },
+      { code: 'Referred/transferred', label: 'Referred/transferred' },
+      { code: 'Mortuary', label: 'Mortuary' },
+      { code: 'Other', label: 'Other' },
+    ],
+    updated_by: null,
+    updated_at: now,
+  },
+];
+
 const satsCategories = ['1', '2', '3', '4'];
 const outcomes = ['1', '2', '3', '4'];
 
@@ -155,7 +176,7 @@ const recordDocs = linkageDocs.map((linkage, index) => ({
     sats_cat: satsCategories[index % satsCategories.length],
     tews_total: index + 1,
     discriminator_yes: index % 2 === 0,
-    discriminator_type: `${index % 4}`,
+    discriminator_type: index % 2 === 0 ? `${(index % 3) + 1}` : '0',
     documentation_complete: true,
   },
   physiology: {
@@ -218,6 +239,9 @@ try {
     device_id: { $in: deviceDocs.map((device) => device.device_id) },
   });
   await db.collection('assignments').deleteMany({ _id: assignmentId });
+  await db.collection('study_configurations').deleteMany({
+    key: { $in: studyConfigurationDocs.map((entry) => entry.key) },
+  });
   await db.collection('research_records').deleteMany({
     study_id: { $in: recordDocs.map((record) => record.study_id) },
   });
@@ -231,6 +255,7 @@ try {
   await db.collection('users').insertMany(userDocs);
   await db.collection('devices').insertMany(deviceDocs);
   await db.collection('assignments').insertMany(assignmentDocs);
+  await db.collection('study_configurations').insertMany(studyConfigurationDocs);
   await db.collection('patient_linkage').insertMany(linkageDocs);
   await db.collection('research_records').insertMany(recordDocs);
   await db.collection('outcomes').insertMany(outcomeDocs);

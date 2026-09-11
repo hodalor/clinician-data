@@ -13,6 +13,7 @@ import {
   ResearchRecordModelName,
   ResearchRecordSchema,
 } from '../records/schemas/research-record.schema.js';
+import { OutcomeModelName, OutcomeSchema } from '../outcomes/schemas/outcome.schema.js';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import {
     MongooseModule.forFeature([
       { name: QcReviewModelName, schema: QcReviewSchema },
       { name: ResearchRecordModelName, schema: ResearchRecordSchema },
+      { name: OutcomeModelName, schema: OutcomeSchema },
       { name: UserModelName, schema: UserSchema },
     ]),
   ],

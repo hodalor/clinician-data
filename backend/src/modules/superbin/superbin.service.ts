@@ -58,8 +58,29 @@ export class SuperbinService {
       .sort({ deleted_at: -1, _id: -1 })
       .lean();
 
+    const relatedUserIds = new Set<string>();
+
+    for (const item of items) {
+      if (item.deleted_by) {
+        relatedUserIds.add(item.deleted_by.toString());
+      }
+      if (item.ra_id) {
+        relatedUserIds.add(item.ra_id.toString());
+      }
+      if (item.user_id) {
+        relatedUserIds.add(item.user_id.toString());
+      }
+    }
+
+    const users = await this.userModel
+      .find({ _id: { $in: [...relatedUserIds].map((id) => this.toObjectId(id)) } })
+      .lean();
+    const userMap = new Map(
+      users.map((entry: any) => [entry._id.toString(), entry.full_name]),
+    );
+
     return {
-      data: items.map((item: any) => this.serialize(key, item)),
+      data: items.map((item: any) => this.serialize(key, item, userMap)),
     };
   }
 
@@ -107,11 +128,19 @@ export class SuperbinService {
     };
   }
 
-  private serialize(collection: CollectionKey, item: any) {
+  private serialize(
+    collection: CollectionKey,
+    item: any,
+    userMap: Map<string, string>,
+  ) {
     const base = {
       id: item._id.toString(),
       deleted_at: item.deleted_at ?? null,
       delete_reason: item.delete_reason ?? null,
+      actor:
+        item.deleted_by != null
+          ? (userMap.get(item.deleted_by.toString()) ?? item.deleted_by.toString())
+          : null,
     };
 
     switch (collection) {
@@ -131,13 +160,19 @@ export class SuperbinService {
             item.file_ranges?.join(', ') || 'No file ranges'
           }`,
           status: item.status,
-          detail: item.ra_id?.toString() ?? '',
+          detail:
+            item.ra_id != null
+              ? (userMap.get(item.ra_id.toString()) ?? item.ra_id.toString())
+              : '',
         };
       case 'devices':
         return {
           ...base,
           title: item.device_id,
-          subtitle: item.user_id?.toString() ?? '',
+          subtitle:
+            item.user_id != null
+              ? (userMap.get(item.user_id.toString()) ?? item.user_id.toString())
+              : '',
           status: item.authorised ? 'Authorised' : 'Inactive',
           detail: item.last_seen_at ? new Date(item.last_seen_at).toLocaleString() : 'Never seen',
         };

@@ -77,6 +77,7 @@ export function SuperbinPage() {
                       <Table.Th>TITLE</Table.Th>
                       <Table.Th>STATUS</Table.Th>
                       <Table.Th>DETAIL</Table.Th>
+                      <Table.Th>ACTOR</Table.Th>
                       <Table.Th>DELETED AT</Table.Th>
                       <Table.Th>REASON</Table.Th>
                       <Table.Th>ACTIONS</Table.Th>
@@ -85,7 +86,7 @@ export function SuperbinPage() {
                   <Table.Tbody>
                     {collection.key !== activeTab ? null : items.length === 0 ? (
                       <Table.Tr>
-                        <Table.Td colSpan={6}>
+                        <Table.Td colSpan={7}>
                           <Text ta="center" py="lg" c="dimmed">
                             {isLoading ? 'Loading deleted items...' : 'Nothing is in this bin.'}
                           </Text>
@@ -102,6 +103,7 @@ export function SuperbinPage() {
                           </Table.Td>
                           <Table.Td>{item.status}</Table.Td>
                           <Table.Td>{item.detail || 'Not available'}</Table.Td>
+                          <Table.Td>{item.actor ?? 'Unknown user'}</Table.Td>
                           <Table.Td>
                             {item.deleted_at
                               ? new Date(item.deleted_at).toLocaleString()

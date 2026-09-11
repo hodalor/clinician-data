@@ -111,7 +111,7 @@ export interface RecordListItem {
   physiology?: Record<string, unknown>;
   presentation?: Record<string, unknown>;
   process?: Record<string, unknown>;
-  outcomes?: Record<string, unknown>;
+  outcome?: Record<string, unknown> | null;
   data_quality?: {
     reviewer_id?: string;
     qc_comment?: string;
@@ -278,6 +278,7 @@ export interface SuperbinItem {
   subtitle: string;
   status: string;
   detail: string;
+  actor: string | null;
   deleted_at: string | null;
   delete_reason: string | null;
 }
@@ -302,4 +303,18 @@ export interface DeviceRequestSummary {
 
 export interface DeviceRequestListResponse {
   data: DeviceRequestSummary[];
+}
+
+export interface StudyConfigurationValue {
+  code: string;
+  label: string;
+}
+
+export interface InitialDestinationCodesResponse {
+  key: string;
+  values: StudyConfigurationValue[];
+  updated_by: string | null;
+  updated_by_name: string | null;
+  updated_at: string | null;
+  pending_pi_approval: boolean;
 }

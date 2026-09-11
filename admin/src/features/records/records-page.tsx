@@ -6,13 +6,7 @@ import { getAssignmentOptions } from '../../api/assignments-api';
 import { deleteRecord, listRecords } from '../../api/records-api';
 import { DeleteConfirmModal } from '../../components/delete-confirm-modal';
 import { ListPageLayout } from '../../components/list-page-layout';
-
-const satsCategoryOptions = [
-  { value: '1', label: '1 Red' },
-  { value: '2', label: '2 Orange' },
-  { value: '3', label: '3 Yellow' },
-  { value: '4', label: '4 Green' },
-];
+import { satsCategoryOptions } from './record-decoders';
 
 export function RecordsPage() {
   const navigate = useNavigate();

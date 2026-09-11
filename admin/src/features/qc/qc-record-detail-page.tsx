@@ -17,6 +17,10 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getQcComparison, resolveQcRecord } from '../../api/qc-api';
 import { getRecord } from '../../api/records-api';
+import {
+  formatRecordFieldLabel,
+  formatRecordValue,
+} from '../records/record-decoders';
 
 export function QcRecordDetailPage() {
   const navigate = useNavigate();
@@ -110,12 +114,12 @@ export function QcRecordDetailPage() {
           <Table.Tbody>
             {(comparison?.comparisons ?? []).map((row) => (
               <Table.Tr key={row.field}>
-                <Table.Td>{row.field}</Table.Td>
+                <Table.Td>{formatRecordFieldLabel(row.field)}</Table.Td>
                 <Table.Td c={row.matches ? undefined : 'red'}>
-                  {formatComparisonValue(row.field, row.ra_value)}
+                  {formatRecordValue(row.field, row.ra_value)}
                 </Table.Td>
                 <Table.Td c={row.matches ? undefined : 'red'}>
-                  {formatComparisonValue(row.field, row.qc_value)}
+                  {formatRecordValue(row.field, row.qc_value)}
                 </Table.Td>
               </Table.Tr>
             ))}
@@ -183,68 +187,6 @@ export function QcRecordDetailPage() {
       </Modal>
     </Stack>
   );
-}
-
-function formatCellValue(value: unknown) {
-  if (value === null || value === undefined || value === '') {
-    return 'Not entered';
-  }
-
-  if (typeof value === 'object') {
-    return JSON.stringify(value);
-  }
-
-  return String(value);
-}
-
-const fieldValueLabels: Record<string, Record<string, string>> = {
-  'sats.discriminator_type': {
-    '0': 'No discriminator documented',
-    '1': 'Shock/uncontrolled haemorrhage',
-    '2': 'Chest pain/cardiovascular',
-    '3': 'Seizure/altered consciousness',
-    '4': 'Major trauma/fracture/dislocation',
-    '5': 'Penetrating injury',
-    '6': 'Burns',
-    '7': 'Poisoning/overdose',
-    '8': 'Hypoglycaemia',
-    '9': 'Hypertensive emergency',
-    '10': 'Respiratory distress/shortness of breath',
-    '11': 'Haemoptysis',
-    '12': 'Abdominal pain/trauma',
-    '13': 'Pregnancy-related emergency',
-    '14': 'Bradycardia',
-    '15': 'Controlled haemorrhage',
-    '16': 'Persistent vomiting',
-    '17': 'PV bleeding',
-    '18': 'Other documented discriminator',
-  },
-  'presentation.complaint_group': {
-    '1': 'Trauma / injury',
-    '2': 'Cardiovascular / chest pain',
-    '3': 'Respiratory',
-    '4': 'Neurological',
-    '5': 'GI / abdominal',
-    '6': 'Infectious / fever',
-    '7': 'Obstetric / gynaecological',
-    '8': 'Endocrine / metabolic',
-    '9': 'Poisoning / toxicological',
-    '10': 'Other',
-  },
-  outcome_source: {
-    '1': 'ED record',
-    '2': 'Patient file',
-    '3': 'Ward register',
-    '4': 'HDU / ICU register',
-    '5': 'Mortality record',
-    '6': 'Multiple sources',
-  },
-};
-
-function formatComparisonValue(field: string, value: unknown) {
-  const raw = formatCellValue(value);
-  const fieldLabels = fieldValueLabels[field];
-  return fieldLabels?.[raw] ? `${raw} ${fieldLabels[raw]}` : raw;
 }
 
 function setNestedValue(target: Record<string, unknown>, path: string, value: unknown) {

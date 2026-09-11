@@ -21,6 +21,11 @@ import { Link, useParams } from 'react-router-dom';
 import { getRecord, getRecordAuditHistory, reopenRecord } from '../../api/records-api';
 import type { RecordListItem } from '../../api/types';
 import { useAuth } from '../auth/use-auth';
+import {
+  formatGenericValue,
+  formatRecordFieldLabel,
+  formatRecordValue,
+} from './record-decoders';
 
 const hiddenFields = new Set([
   '_id',
@@ -167,7 +172,11 @@ export function RecordDetailPage() {
             <KeyValue label="Extractor" value={record?.extractor_id} />
             <KeyValue
               label="QC required"
-              value={record?.data_quality?.qc_required ? 'Yes' : 'No'}
+              value={formatRecordValue(
+                'data_quality.qc_required',
+                record?.data_quality?.qc_required,
+                'Not available',
+              )}
             />
           </Stack>
         </Paper>
@@ -256,8 +265,9 @@ export function RecordDetailPage() {
                   {entry.changed_by_name ?? 'Unknown user'}
                 </Text>
                 <Text size="sm" c="dimmed" mt={4}>
-                  {entry.field} changed from "{formatAuditValue(entry.previous_value)}" to "
-                  {formatAuditValue(entry.new_value)}"
+                  {formatRecordFieldLabel(entry.field)} changed from "
+                  {formatRecordValue(entry.field, entry.previous_value, 'Blank')}" to "
+                  {formatRecordValue(entry.field, entry.new_value, 'Blank')}"
                   {entry.reason ? ` (${entry.reason})` : ''}
                 </Text>
               </Paper>
@@ -320,24 +330,28 @@ function buildSectionEntries(record: RecordListItem | undefined) {
   }
 
   const sections = [
-    { title: 'Eligibility', value: record.eligibility },
-    { title: 'Patient', value: record.patient },
-    { title: 'SATS / TEWS', value: record.sats },
-    { title: 'Physiology', value: record.physiology },
-    { title: 'Presentation', value: record.presentation },
-    { title: 'Process', value: record.process },
-    { title: 'Data quality', value: record.data_quality },
+    { title: 'Eligibility', path: 'eligibility', value: record.eligibility },
+    { title: 'Patient', path: 'patient', value: record.patient },
+    { title: 'SATS / TEWS', path: 'sats', value: record.sats },
+    { title: 'Physiology', path: 'physiology', value: record.physiology },
+    { title: 'Presentation', path: 'presentation', value: record.presentation },
+    { title: 'Outcome', path: 'outcome', value: record.outcome },
+    { title: 'Process', path: 'process', value: record.process },
+    { title: 'Data quality', path: 'data_quality', value: record.data_quality },
   ];
 
   return sections
     .map((section) => ({
       title: section.title,
-      rows: flattenSectionRows(section.value),
+      rows: flattenSectionRows(section.value, section.path),
     }))
     .filter((section) => section.rows.length > 0);
 }
 
-function flattenSectionRows(value: unknown, prefix = ''): Array<{ label: string; value: string }> {
+function flattenSectionRows(
+  value: unknown,
+  pathPrefix = '',
+): Array<{ label: string; value: string }> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return [];
   }
@@ -347,17 +361,18 @@ function flattenSectionRows(value: unknown, prefix = ''): Array<{ label: string;
       return [];
     }
 
-    const label = prefix ? `${prefix} ${humanizeKey(key)}` : humanizeKey(key);
+    const nextPath = pathPrefix ? `${pathPrefix}.${key}` : key;
+    const label = formatRecordFieldLabel(nextPath);
 
     if (entryValue && typeof entryValue === 'object' && !Array.isArray(entryValue)) {
-      return flattenSectionRows(entryValue, label);
+      return flattenSectionRows(entryValue, nextPath);
     }
 
     if (Array.isArray(entryValue)) {
       return [
         {
           label,
-          value: entryValue.map((item) => formatAuditValue(item)).join(', '),
+          value: entryValue.map((item) => formatGenericValue(item)).join(', '),
         },
       ];
     }
@@ -365,29 +380,10 @@ function flattenSectionRows(value: unknown, prefix = ''): Array<{ label: string;
     return [
       {
         label,
-        value: formatAuditValue(entryValue),
+        value: formatRecordValue(nextPath, entryValue, 'Empty'),
       },
     ];
   });
-}
-
-function humanizeKey(key: string) {
-  return key
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (match) => match.toUpperCase());
-}
-
-function formatAuditValue(value: unknown) {
-  if (value === null || value === undefined || value === '') {
-    return 'Empty';
-  }
-  if (typeof value === 'boolean') {
-    return value ? 'Yes' : 'No';
-  }
-  if (typeof value === 'object') {
-    return JSON.stringify(value);
-  }
-  return String(value);
 }
 
 const paperStyle = {

@@ -165,6 +165,37 @@ export const collectionDefinitions: CollectionDefinition[] = [
     ],
   },
   {
+    name: 'study_configurations',
+    validator: {
+      $jsonSchema: {
+        bsonType: 'object',
+        required: ['key', 'values', 'updated_at'],
+        properties: {
+          key: { bsonType: 'string' },
+          values: {
+            bsonType: 'array',
+            items: {
+              bsonType: 'object',
+              required: ['code', 'label'],
+              properties: {
+                code: { bsonType: 'string' },
+                label: { bsonType: 'string' },
+              },
+            },
+          },
+          updated_by: { bsonType: ['objectId', 'null'] },
+          updated_at: { bsonType: 'date' },
+        },
+      },
+    },
+    indexes: [
+      {
+        key: { key: 1 },
+        options: { unique: true, name: 'uq_study_configurations_key' },
+      },
+    ],
+  },
+  {
     name: 'assignments',
     validator: {
       $jsonSchema: {

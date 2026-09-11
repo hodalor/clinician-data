@@ -94,6 +94,13 @@ StepValidationResult _validateSats(RaRecordDraft draft) {
       (draft.discriminatorType ?? '').trim().isEmpty) {
     errors.add('Choose the discriminator type.');
   }
+  if (draft.discriminatorYes != true &&
+      (draft.discriminatorType ?? '').trim().isNotEmpty &&
+      draft.discriminatorType != '0') {
+    errors.add(
+      'Discriminator type can only be non-zero when a discriminator was documented.',
+    );
+  }
 
   return StepValidationResult(hardErrors: errors);
 }

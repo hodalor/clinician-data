@@ -18,6 +18,7 @@ import { ExportPage } from '../features/export/export-page';
 import { AuditPage } from '../features/audit/audit-page';
 import { ManualPage } from '../features/manual/manual-page';
 import { SuperbinPage } from '../features/superbin/superbin-page';
+import { InitialDestinationCodesPage } from '../features/study-configurations/initial-destination-codes-page';
 import { ProtectedRoute } from './protected-route';
 import { RoleRoute } from './role-route';
 
@@ -44,6 +45,10 @@ export const appRouter = createBrowserRouter([
               { path: '/records/:recordId', element: <RecordDetailPage /> },
               { path: '/missingness', element: <MissingnessPage /> },
               { path: '/audit', element: <AuditPage /> },
+              {
+                path: '/destination-codes',
+                element: <InitialDestinationCodesPage />,
+              },
             ],
           },
           {

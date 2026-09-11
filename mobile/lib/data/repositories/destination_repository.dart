@@ -15,7 +15,7 @@ class DestinationRepository {
   Future<List<DestinationOption>> fetchApprovedDestinations() async {
     try {
       final response =
-          await _dio.get<dynamic>('/records/metadata/destinations');
+          await _dio.get<dynamic>('/config/initial-destination-codes');
       final options = _parseOptions(response.data);
       if (options.isNotEmpty) {
         await _cacheStorage.writeCachedOptions(options);
@@ -30,7 +30,11 @@ class DestinationRepository {
 
   List<DestinationOption> _parseOptions(dynamic payload) {
     final data = payload is Map<String, dynamic>
-        ? payload['data'] ??
+        ? payload['values'] ??
+            (payload['data'] is Map<String, dynamic>
+                ? payload['data']['values']
+                : null) ??
+            payload['data'] ??
             payload['items'] ??
             payload['destinations'] ??
             payload

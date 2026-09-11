@@ -17,6 +17,7 @@ import { SyncModule } from './modules/sync/sync.module.js';
 import { ExportModule } from './modules/export/export.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { SuperbinModule } from './modules/superbin/superbin.module.js';
+import { StudyConfigurationsModule } from './modules/study-configurations/study-configurations.module.js';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { SuperbinModule } from './modules/superbin/superbin.module.js';
     ExportModule,
     AuditModule,
     SuperbinModule,
+    StudyConfigurationsModule,
   ],
   providers: [
     {
