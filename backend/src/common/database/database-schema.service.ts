@@ -30,21 +30,34 @@ export class DatabaseSchemaService
       return;
     }
 
-    await this.mongoClient.connect();
-
-    const db = this.mongoClient.db();
-
-    for (const definition of collectionDefinitions) {
-      await this.ensureCollection(db, definition.name, definition.validator);
-      await this.ensureIndexes(db, definition.name, definition.indexes ?? []);
-    }
-
-    this.initialized = true;
-    this.logger.log('MongoDB collections, validators, and indexes are ready.');
+    void this.initializeCollections();
   }
 
   async onApplicationShutdown() {
     await this.mongoClient.close();
+  }
+
+  private async initializeCollections() {
+    try {
+      await this.mongoClient.connect();
+
+      const db = this.mongoClient.db();
+
+      for (const definition of collectionDefinitions) {
+        await this.ensureCollection(db, definition.name, definition.validator);
+        await this.ensureIndexes(db, definition.name, definition.indexes ?? []);
+      }
+
+      this.initialized = true;
+      this.logger.log('MongoDB collections, validators, and indexes are ready.');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown database error';
+
+      this.logger.error(
+        `MongoDB startup bootstrap did not complete: ${message}`,
+      );
+    }
   }
 
   private async ensureCollection(

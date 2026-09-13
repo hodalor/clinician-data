@@ -13,7 +13,11 @@ import { MongoClientModule } from './mongo-client.module.js';
         uri: configService.getOrThrow<string>('MONGODB_URI'),
         autoCreate: false,
         autoIndex: false,
-        lazyConnection: configService.get<string>('NODE_ENV') === 'test',
+        // Let the HTTP server start on Cloud Run even if Atlas is slow or
+        // temporarily unreachable; the first DB operation will trigger connect.
+        lazyConnection: true,
+        serverSelectionTimeoutMS: 10000,
+        connectTimeoutMS: 10000,
       }),
     }),
   ],
