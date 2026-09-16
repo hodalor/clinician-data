@@ -37,6 +37,7 @@ const ComorbiditiesSchema = new Schema(
     dm: { type: String, enum: COMORBIDITY_CODES },
     htn: { type: String, enum: COMORBIDITY_CODES },
     asthma: { type: String, enum: COMORBIDITY_CODES },
+    epilepsy: { type: String, enum: COMORBIDITY_CODES },
     rvd: { type: String, enum: COMORBIDITY_CODES },
     other: { type: String, enum: COMORBIDITY_CODES },
     other_text: { type: String, trim: true },

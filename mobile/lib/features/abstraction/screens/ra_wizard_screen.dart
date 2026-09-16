@@ -444,7 +444,13 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           onChanged: (value) => _updateDraft(_draft.copyWith(asthma: value)),
         ),
         _buildBooleanClinicalCard(
-          title: 'Retroviral disease',
+          title: 'Epilepsy',
+          variableName: 'patient.comorbidities.epilepsy',
+          value: _draft.epilepsy,
+          onChanged: (value) => _updateDraft(_draft.copyWith(epilepsy: value)),
+        ),
+        _buildBooleanClinicalCard(
+          title: 'HIV',
           variableName: 'patient.comorbidities.rvd',
           value: _draft.rvd,
           onChanged: (value) => _updateDraft(_draft.copyWith(rvd: value)),
@@ -643,21 +649,6 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           initialValue: _draft.rbs?.toString(),
           onChanged: (value) =>
               _updateDraft(_draft.copyWith(rbs: double.tryParse(value))),
-        ),
-        _QuestionCard(
-          title: 'Rapid diagnostic test',
-          variableName: 'physiology.rdt',
-          child: _LargeDropdownField<String>(
-            value: _draft.rdt,
-            hintText: 'Choose RDT result',
-            items: const [
-              DropdownMenuItem(value: '0', child: Text('Negative')),
-              DropdownMenuItem(value: '1', child: Text('Positive')),
-              DropdownMenuItem(value: '8', child: Text('Not done / N-A')),
-              DropdownMenuItem(value: '9', child: Text('Not recorded')),
-            ],
-            onChanged: (value) => _updateDraft(_draft.copyWith(rdt: value)),
-          ),
         ),
         _QuestionCard(
           title: 'Mobility',
@@ -1159,11 +1150,13 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                   dm: drift.Value(_encodeBinary(_draft.dm)),
                   htn: drift.Value(_encodeBinary(_draft.htn)),
                   asthma: drift.Value(_encodeBinary(_draft.asthma)),
+                  epilepsy: drift.Value(_encodeBinary(_draft.epilepsy)),
                   rvd: drift.Value(_encodeBinary(_draft.rvd)),
                   otherComorb: drift.Value(_encodeBinary(_draft.otherComorb)),
                   otherComorbText: drift.Value(_draft.otherComorbText?.trim()),
                   comorbAny: drift.Value(_draft.comorbAny),
-                  pregTest: drift.Value(_draft.sex == '1' ? null : _draft.pregTest),
+                  pregTest:
+                      drift.Value(_draft.sex == '1' ? null : _draft.pregTest),
                 ),
           sats: _draft.skipsClinicalSections
               ? null
@@ -1189,7 +1182,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                   dbp: drift.Value(_draft.dbp),
                   spo2: drift.Value(_draft.spo2),
                   rbs: drift.Value(_draft.rbs),
-                  rdt: drift.Value(_draft.rdt),
+                  rdt: const drift.Value(null),
                   mobility: drift.Value(_draft.mobility),
                   avpu: drift.Value(_draft.avpu),
                   trauma: drift.Value(_draft.trauma),

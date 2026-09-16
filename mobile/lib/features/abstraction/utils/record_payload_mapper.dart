@@ -29,6 +29,8 @@ Map<String, dynamic> buildRecordPayloadFromDraft(RaRecordDraft draft) {
           'htn': _encodeBinaryCode(draft.htn),
         if (_encodeBinaryCode(draft.asthma) != null)
           'asthma': _encodeBinaryCode(draft.asthma),
+        if (_encodeBinaryCode(draft.epilepsy) != null)
+          'epilepsy': _encodeBinaryCode(draft.epilepsy),
         if (_encodeBinaryCode(draft.rvd) != null)
           'rvd': _encodeBinaryCode(draft.rvd),
         if (_encodeBinaryCode(draft.otherComorb) != null)
@@ -59,7 +61,6 @@ Map<String, dynamic> buildRecordPayloadFromDraft(RaRecordDraft draft) {
       if (draft.dbp != null) 'dbp': draft.dbp,
       if (draft.spo2 != null) 'spo2': draft.spo2,
       if (draft.rbs != null) 'rbs': draft.rbs,
-      if (draft.rdt?.isNotEmpty == true) 'rdt': draft.rdt,
       if (draft.mobility?.isNotEmpty == true) 'mobility': draft.mobility,
       if (draft.avpu?.isNotEmpty == true) 'avpu': draft.avpu,
       if (draft.trauma?.isNotEmpty == true) 'trauma': draft.trauma,

@@ -293,6 +293,7 @@ export const collectionDefinitions: CollectionDefinition[] = [
                   dm: { enum: [...COMORBIDITY_CODES] },
                   htn: { enum: [...COMORBIDITY_CODES] },
                   asthma: { enum: [...COMORBIDITY_CODES] },
+                  epilepsy: { enum: [...COMORBIDITY_CODES] },
                   rvd: { enum: [...COMORBIDITY_CODES] },
                   other: { enum: [...COMORBIDITY_CODES] },
                   other_text: { bsonType: 'string' },

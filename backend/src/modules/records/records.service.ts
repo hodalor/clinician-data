@@ -659,6 +659,11 @@ export class RecordsService {
     this.validateEnumField(normalized, 'patient.comorbidities.dm', errors);
     this.validateEnumField(normalized, 'patient.comorbidities.htn', errors);
     this.validateEnumField(normalized, 'patient.comorbidities.asthma', errors);
+    this.validateEnumField(
+      normalized,
+      'patient.comorbidities.epilepsy',
+      errors,
+    );
     this.validateEnumField(normalized, 'patient.comorbidities.rvd', errors);
     this.validateEnumField(normalized, 'patient.comorbidities.other', errors);
     this.validateEnumField(normalized, 'patient.comorb_any', errors);

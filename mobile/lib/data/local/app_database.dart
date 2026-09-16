@@ -87,6 +87,7 @@ class PatientEntries extends Table {
   TextColumn get dm => text().nullable()();
   TextColumn get htn => text().nullable()();
   TextColumn get asthma => text().nullable()();
+  TextColumn get epilepsy => text().nullable()();
   TextColumn get rvd => text().nullable()();
   TextColumn get otherComorb => text().named('other_comorb').nullable()();
   TextColumn get otherComorbText =>
@@ -104,6 +105,7 @@ class PatientEntries extends Table {
         "CHECK (dm IS NULL OR dm IN ('0', '1', '9'))",
         "CHECK (htn IS NULL OR htn IN ('0', '1', '9'))",
         "CHECK (asthma IS NULL OR asthma IN ('0', '1', '9'))",
+        "CHECK (epilepsy IS NULL OR epilepsy IN ('0', '1', '9'))",
         "CHECK (rvd IS NULL OR rvd IN ('0', '1', '9'))",
         "CHECK (other_comorb IS NULL OR other_comorb IN ('0', '1', '9'))",
         "CHECK (comorb_any IS NULL OR comorb_any IN ('0', '1', '9'))",
@@ -255,7 +257,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -284,6 +286,9 @@ class AppDatabase extends _$AppDatabase {
               researchRecords,
               researchRecords.nextRetryAt,
             );
+          }
+          if (from < 3) {
+            await migrator.addColumn(patientEntries, patientEntries.epilepsy);
           }
         },
       );

@@ -21,6 +21,7 @@ class RaRecordDraft {
     this.dm,
     this.htn,
     this.asthma,
+    this.epilepsy,
     this.rvd,
     this.otherComorb,
     this.otherComorbText,
@@ -71,6 +72,7 @@ class RaRecordDraft {
   final bool? dm;
   final bool? htn;
   final bool? asthma;
+  final bool? epilepsy;
   final bool? rvd;
   final bool? otherComorb;
   final String? otherComorbText;
@@ -104,7 +106,7 @@ class RaRecordDraft {
   final int version;
 
   String? get comorbAny {
-    final flags = [dm, htn, asthma, rvd, otherComorb];
+    final flags = [dm, htn, asthma, epilepsy, rvd, otherComorb];
     if (flags.every((flag) => flag == null)) {
       return null;
     }
@@ -137,6 +139,7 @@ class RaRecordDraft {
     Object? dm = _unset,
     Object? htn = _unset,
     Object? asthma = _unset,
+    Object? epilepsy = _unset,
     Object? rvd = _unset,
     Object? otherComorb = _unset,
     Object? otherComorbText = _unset,
@@ -196,6 +199,7 @@ class RaRecordDraft {
       dm: identical(dm, _unset) ? this.dm : dm as bool?,
       htn: identical(htn, _unset) ? this.htn : htn as bool?,
       asthma: identical(asthma, _unset) ? this.asthma : asthma as bool?,
+      epilepsy: identical(epilepsy, _unset) ? this.epilepsy : epilepsy as bool?,
       rvd: identical(rvd, _unset) ? this.rvd : rvd as bool?,
       otherComorb: identical(otherComorb, _unset)
           ? this.otherComorb
@@ -281,6 +285,7 @@ class RaRecordDraft {
       dm: _decodeBinaryCode(bundle.patient?.dm),
       htn: _decodeBinaryCode(bundle.patient?.htn),
       asthma: _decodeBinaryCode(bundle.patient?.asthma),
+      epilepsy: _decodeBinaryCode(bundle.patient?.epilepsy),
       rvd: _decodeBinaryCode(bundle.patient?.rvd),
       otherComorb: _decodeBinaryCode(bundle.patient?.otherComorb),
       otherComorbText: bundle.patient?.otherComorbText,
