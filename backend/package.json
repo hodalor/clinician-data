@@ -9,10 +9,10 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"*.{js,json,yml}\"",
-    "start": "nest start",
+    "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/main.js",
     "seed": "node ./scripts/seed.mjs",
     "lint": "eslint \"{src,test}/**/*.ts\"",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
