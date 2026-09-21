@@ -287,6 +287,7 @@ export const collectionDefinitions: CollectionDefinition[] = [
             properties: {
               sex: { enum: [...SEX_CODES] },
               referral: { enum: [...REFERRAL_CODES] },
+              referring_health_center: { bsonType: 'string' },
               comorbidities: {
                 bsonType: 'object',
                 properties: {

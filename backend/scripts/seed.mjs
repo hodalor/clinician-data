@@ -161,6 +161,7 @@ const recordDocs = linkageDocs.map((linkage, index) => ({
   patient: {
     sex: index % 2 === 0 ? '1' : '2',
     referral: '1',
+    referring_health_center: `Health Centre ${index + 1}`,
     comorbidities: {
       dm: '0',
       htn: '1',

@@ -18,6 +18,7 @@ class RaRecordDraft {
     this.exclusionReason,
     this.sex,
     this.referral,
+    this.referringHealthCenter,
     this.dm,
     this.htn,
     this.asthma,
@@ -69,6 +70,7 @@ class RaRecordDraft {
   final String? exclusionReason;
   final String? sex;
   final String? referral;
+  final String? referringHealthCenter;
   final bool? dm;
   final bool? htn;
   final bool? asthma;
@@ -136,6 +138,7 @@ class RaRecordDraft {
     Object? exclusionReason = _unset,
     Object? sex = _unset,
     Object? referral = _unset,
+    Object? referringHealthCenter = _unset,
     Object? dm = _unset,
     Object? htn = _unset,
     Object? asthma = _unset,
@@ -196,6 +199,9 @@ class RaRecordDraft {
       sex: identical(sex, _unset) ? this.sex : sex as String?,
       referral:
           identical(referral, _unset) ? this.referral : referral as String?,
+      referringHealthCenter: identical(referringHealthCenter, _unset)
+          ? this.referringHealthCenter
+          : referringHealthCenter as String?,
       dm: identical(dm, _unset) ? this.dm : dm as bool?,
       htn: identical(htn, _unset) ? this.htn : htn as bool?,
       asthma: identical(asthma, _unset) ? this.asthma : asthma as bool?,
@@ -282,6 +288,7 @@ class RaRecordDraft {
       exclusionReason: bundle.eligibility?.exclusionReason,
       sex: bundle.patient?.sex,
       referral: bundle.patient?.referral,
+      referringHealthCenter: bundle.patient?.referringHealthCenter,
       dm: _decodeBinaryCode(bundle.patient?.dm),
       htn: _decodeBinaryCode(bundle.patient?.htn),
       asthma: _decodeBinaryCode(bundle.patient?.asthma),

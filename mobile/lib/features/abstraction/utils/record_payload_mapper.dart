@@ -22,6 +22,8 @@ Map<String, dynamic> buildRecordPayloadFromDraft(RaRecordDraft draft) {
     'patient': {
       if (draft.sex?.isNotEmpty == true) 'sex': draft.sex,
       if (draft.referral?.isNotEmpty == true) 'referral': draft.referral,
+      if (draft.referringHealthCenter?.trim().isNotEmpty == true)
+        'referring_health_center': draft.referringHealthCenter!.trim(),
       'comorbidities': {
         if (_encodeBinaryCode(draft.dm) != null)
           'dm': _encodeBinaryCode(draft.dm),

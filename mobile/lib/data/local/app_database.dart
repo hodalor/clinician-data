@@ -84,6 +84,8 @@ class PatientEntries extends Table {
   TextColumn get studyId => text().named('study_id')();
   TextColumn get sex => text().nullable()();
   TextColumn get referral => text().nullable()();
+  TextColumn get referringHealthCenter =>
+      text().named('referring_health_center').nullable()();
   TextColumn get dm => text().nullable()();
   TextColumn get htn => text().nullable()();
   TextColumn get asthma => text().nullable()();
@@ -257,7 +259,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -289,6 +291,12 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 3) {
             await migrator.addColumn(patientEntries, patientEntries.epilepsy);
+          }
+          if (from < 4) {
+            await migrator.addColumn(
+              patientEntries,
+              patientEntries.referringHealthCenter,
+            );
           }
         },
       );

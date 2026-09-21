@@ -77,6 +77,10 @@ StepValidationResult _validateEligibility(RaRecordDraft draft) {
 
 StepValidationResult _validatePatient(RaRecordDraft draft) {
   final errors = <String>[];
+  if (draft.referral == '1' &&
+      (draft.referringHealthCenter ?? '').trim().isEmpty) {
+    errors.add('Enter the health center the patient is coming from.');
+  }
   if (draft.otherComorb == true &&
       (draft.otherComorbText ?? '').trim().isEmpty) {
     errors.add('Describe the other comorbidity.');
@@ -184,7 +188,7 @@ StepValidationResult _validatePresentation(RaRecordDraft draft) {
 StepValidationResult _validateDestination(RaRecordDraft draft) {
   if ((draft.initialDestination ?? '').trim().isEmpty) {
     return const StepValidationResult(
-      hardErrors: ['Choose the immediate destination.'],
+      hardErrors: ['Choose the disposition.'],
     );
   }
   return const StepValidationResult();

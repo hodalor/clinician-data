@@ -49,6 +49,7 @@ const PatientSchema = new Schema(
   {
     sex: { type: String, enum: SEX_CODES },
     referral: { type: String, enum: REFERRAL_CODES },
+    referring_health_center: { type: String, trim: true },
     comorbidities: { type: ComorbiditiesSchema },
     comorb_any: { type: String, enum: COMORBIDITY_CODES },
     preg_test: { type: String, enum: PREG_TEST_CODES },

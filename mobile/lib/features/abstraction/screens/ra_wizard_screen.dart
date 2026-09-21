@@ -50,6 +50,7 @@ class RaWizardScreen extends ConsumerStatefulWidget {
 class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
   final _studyIdController = TextEditingController();
   final _exclusionReasonController = TextEditingController();
+  final _referringHealthCenterController = TextEditingController();
   final _otherComorbTextController = TextEditingController();
   final _chiefComplaintController = TextEditingController();
   final _manualDestinationController = TextEditingController();
@@ -71,6 +72,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
   void dispose() {
     _studyIdController.dispose();
     _exclusionReasonController.dispose();
+    _referringHealthCenterController.dispose();
     _otherComorbTextController.dispose();
     _chiefComplaintController.dispose();
     _manualDestinationController.dispose();
@@ -421,10 +423,32 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
               DropdownMenuItem(value: '1', child: Text('1 Referred')),
               DropdownMenuItem(value: '9', child: Text('9 Unknown')),
             ],
-            onChanged: (value) =>
-                _updateDraft(_draft.copyWith(referral: value)),
+            onChanged: (value) {
+              if (value != '1') {
+                _referringHealthCenterController.clear();
+              }
+              _updateDraft(
+                _draft.copyWith(
+                  referral: value,
+                  referringHealthCenter:
+                      value == '1' ? _draft.referringHealthCenter : null,
+                ),
+              );
+            },
           ),
         ),
+        if (_draft.referral == '1')
+          _QuestionCard(
+            title: 'Health center patient is coming from',
+            variableName: 'patient.referring_health_center',
+            child: _LargeTextFormField(
+              controller: _referringHealthCenterController,
+              hintText: 'Enter the referring health center',
+              onChanged: (value) => _updateDraft(
+                _draft.copyWith(referringHealthCenter: value),
+              ),
+            ),
+          ),
         _buildBooleanClinicalCard(
           title: 'Diabetes mellitus',
           variableName: 'patient.comorbidities.dm',
@@ -763,7 +787,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _QuestionCard(
-          title: 'Immediate destination',
+          title: 'Disposition',
           variableName: 'initial_destination',
           child: destinationsAsync.when(
             data: (destinations) {
@@ -773,7 +797,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
 
               return _LargeDropdownField<String>(
                 value: _draft.initialDestination,
-                hintText: 'Choose immediate destination',
+                hintText: 'Choose disposition',
                 items: destinations
                     .map(
                       (option) => DropdownMenuItem<String>(
@@ -805,7 +829,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           ),
         ),
         _QuestionCard(
-          title: 'Clinician time',
+          title: 'Time LMUTH was called by the referring facility',
           variableName: 'process.clinician_time',
           child: _TimePickerField(
             value: _draft.clinicianTime,
@@ -814,7 +838,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           ),
         ),
         _QuestionCard(
-          title: 'Treatment time',
+          title: 'Time treatment was initiated at LMUTH',
           variableName: 'process.treatment_time',
           child: _TimePickerField(
             value: _draft.treatmentTime,
@@ -904,7 +928,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           _ReviewCard(
             title: 'Patient characteristics',
             summary:
-                'Sex: ${decodeLabel(sexLabels, _draft.sex)} | Referral: ${decodeLabel(referralLabels, _draft.referral)}',
+                'Sex: ${decodeLabel(sexLabels, _draft.sex)} | Referral: ${decodeLabel(referralLabels, _draft.referral)}${(_draft.referringHealthCenter ?? '').trim().isNotEmpty ? ' | Health center: ${_draft.referringHealthCenter!.trim()}' : ''}',
             onEdit: () => _jumpToStep(WizardStep.patient),
           ),
           _ReviewCard(
@@ -927,14 +951,14 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
             onEdit: () => _jumpToStep(WizardStep.presentation),
           ),
           _ReviewCard(
-            title: 'Immediate destination',
+            title: 'Disposition',
             summary: _labelOrBlank(_draft.initialDestination),
             onEdit: () => _jumpToStep(WizardStep.destination),
           ),
           _ReviewCard(
             title: 'Process',
             summary:
-                'Clinician: ${_labelOrBlank(_draft.clinicianTime)} | Treatment: ${_labelOrBlank(_draft.treatmentTime)}',
+                'LMUTH called: ${_labelOrBlank(_draft.clinicianTime)} | Treatment started: ${_labelOrBlank(_draft.treatmentTime)}',
             onEdit: () => _jumpToStep(WizardStep.process),
           ),
           _ReviewCard(
@@ -1042,12 +1066,12 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const Text(
-          'Approved destination codes could not be loaded from the backend. Enter the approved code manually.',
+          'Approved disposition codes could not be loaded from the backend. Enter the approved code manually.',
         ),
         const SizedBox(height: 12),
         _LargeTextFormField(
           controller: _manualDestinationController,
-          hintText: 'Enter destination code',
+          hintText: 'Enter disposition code',
           onChanged: (value) =>
               _updateDraft(_draft.copyWith(initialDestination: value)),
         ),
@@ -1147,6 +1171,8 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                   studyId: drift.Value(studyId),
                   sex: drift.Value(_draft.sex),
                   referral: drift.Value(_draft.referral),
+                  referringHealthCenter:
+                      drift.Value(_draft.referringHealthCenter?.trim()),
                   dm: drift.Value(_encodeBinary(_draft.dm)),
                   htn: drift.Value(_encodeBinary(_draft.htn)),
                   asthma: drift.Value(_encodeBinary(_draft.asthma)),
@@ -1319,6 +1345,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
   void _applyDraft(RaRecordDraft draft) {
     _studyIdController.text = draft.studyId;
     _exclusionReasonController.text = draft.exclusionReason ?? '';
+    _referringHealthCenterController.text = draft.referringHealthCenter ?? '';
     _otherComorbTextController.text = draft.otherComorbText ?? '';
     _chiefComplaintController.text = draft.chiefComplaintVerbatim ?? '';
     _manualDestinationController.text = draft.initialDestination ?? '';

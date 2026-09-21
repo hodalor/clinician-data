@@ -165,7 +165,7 @@ export function InitialDestinationCodesPage() {
             ) : null}
             <Group justify="space-between" align="flex-end" wrap="wrap">
               <div>
-                <Text fw={600}>Immediate destination list</Text>
+                <Text fw={600}>Disposition list</Text>
                 <Text size="sm" c="dimmed">
                   Mobile now reads this list from the backend. Manual entry is only used if
                   the list is genuinely empty.
