@@ -28,10 +28,11 @@ substitutions:
   _REGION: europe-west9
   _SERVICE: suestudy
   _AR_REPO: cloud-run-source-deploy
-  _IMAGE_URI: ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$COMMIT_SHA
+  _IMAGE_URI: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE}:${COMMIT_SHA}
 
 images:
   - ${_IMAGE_URI}
 
 options:
   logging: CLOUD_LOGGING_ONLY
+  dynamic_substitutions: true
