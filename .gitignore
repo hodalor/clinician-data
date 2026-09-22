@@ -17,14 +17,21 @@ pnpm-debug.log*
 # Flutter / Dart local state
 **/.dart_tool/
 **/.dartServer/
+**/.gradle/
 **/.flutter-sdk/
+**/.flutter
+**/.flutter/
+**/.android/
+**/.kotlin/
 **/.config/
 **/.pub/
 **/.pub-cache/
+**/Library/
 **/build/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
+**/*.apk
 
 # Local env
 **/.env

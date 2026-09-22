@@ -13,7 +13,7 @@ import {
   USER_ROLES,
   type UserRole,
 } from '../../common/database/schema.constants.js';
-import { isAdminRole } from '../../common/auth/role-access.util.js';
+import { isPiOrAdminRole } from '../../common/auth/role-access.util.js';
 import { UserModelName } from './schemas/user.schema.js';
 import type { UpsertUserDto } from './dto/upsert-user.dto.js';
 
@@ -38,7 +38,7 @@ export class UsersService {
   ) {}
 
   async listUsers(user: AuthenticatedUser) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const users = await this.userModel
       .find({ deleted_at: null })
       .sort({ created_at: -1 })
@@ -49,7 +49,7 @@ export class UsersService {
   }
 
   async createUser(user: AuthenticatedUser, payload: UpsertUserDto) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const normalized = await this.prepareUserPayload(payload, true);
     const created = await this.userModel.create({
       ...normalized,
@@ -66,7 +66,7 @@ export class UsersService {
     id: string,
     payload: UpsertUserDto,
   ) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const existing = await this.userModel
       .findOne({ _id: this.toObjectId(id), deleted_at: null })
       .exec();
@@ -91,7 +91,7 @@ export class UsersService {
   }
 
   async softDeleteUser(user: AuthenticatedUser, id: string, reason: string) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
 
     if (user.userId === id) {
       throw new BadRequestException('You cannot delete your own account');
@@ -117,9 +117,9 @@ export class UsersService {
     };
   }
 
-  private assertAdmin(user: AuthenticatedUser) {
-    if (!isAdminRole(user.role)) {
-      throw new ForbiddenException('Only ADMIN users may manage users');
+  private assertPiOrAdmin(user: AuthenticatedUser) {
+    if (!isPiOrAdminRole(user.role)) {
+      throw new ForbiddenException('Only PI and ADMIN users may manage users');
     }
   }
 

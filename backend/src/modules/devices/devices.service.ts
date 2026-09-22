@@ -8,7 +8,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
 import type { Model } from 'mongoose';
-import { isAdminRole } from '../../common/auth/role-access.util.js';
+import { isPiOrAdminRole } from '../../common/auth/role-access.util.js';
 import type { AuthenticatedUser } from '../../common/auth/authenticated-user.interface.js';
 import { DeviceModelName } from './schemas/device.schema.js';
 import { DeviceRequestModelName } from './schemas/device-request.schema.js';
@@ -128,7 +128,7 @@ export class DevicesService {
   }
 
   async listDevices(user: AuthenticatedUser) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const devices = await this.deviceModel
       .find({ deleted_at: null })
       .sort({ last_seen_at: -1 })
@@ -159,7 +159,7 @@ export class DevicesService {
   }
 
   async listDeviceRequests(user: AuthenticatedUser, status = 'pending') {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const query: Record<string, unknown> = {};
 
     if (status.trim().length > 0) {
@@ -192,7 +192,7 @@ export class DevicesService {
   }
 
   async deactivateDevice(user: AuthenticatedUser, id: string) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const device = await this.deviceModel
       .findOne({ _id: this.toObjectId(id), deleted_at: null })
       .exec();
@@ -213,7 +213,7 @@ export class DevicesService {
   }
 
   async softDeleteDevice(user: AuthenticatedUser, id: string, reason: string) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const device = await this.deviceModel
       .findOne({ _id: this.toObjectId(id), deleted_at: null })
       .exec();
@@ -235,7 +235,7 @@ export class DevicesService {
   }
 
   async approveDeviceRequest(user: AuthenticatedUser, id: string) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const request = await this.deviceRequestModel
       .findById(this.toObjectId(id))
       .exec();
@@ -329,7 +329,7 @@ export class DevicesService {
   }
 
   async rejectDeviceRequest(user: AuthenticatedUser, id: string) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const request = await this.deviceRequestModel
       .findById(this.toObjectId(id))
       .exec();
@@ -358,7 +358,7 @@ export class DevicesService {
     user: AuthenticatedUser,
     payload: { user_id: string; device_id: string },
   ) {
-    this.assertAdmin(user);
+    this.assertPiOrAdmin(user);
     const targetUserId = this.toObjectId(
       this.readRequiredString(payload.user_id, 'user_id'),
     );
@@ -409,9 +409,9 @@ export class DevicesService {
     };
   }
 
-  private assertAdmin(user: AuthenticatedUser) {
-    if (!isAdminRole(user.role)) {
-      throw new ForbiddenException('Only ADMIN users may manage devices');
+  private assertPiOrAdmin(user: AuthenticatedUser) {
+    if (!isPiOrAdminRole(user.role)) {
+      throw new ForbiddenException('Only PI and ADMIN users may manage devices');
     }
   }
 

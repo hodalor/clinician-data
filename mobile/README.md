@@ -2,6 +2,15 @@
 
 Android-first Flutter scaffold for offline abstraction, sync, and QC workflows.
 
+## Live backend
+
+The mobile app is configured to use the deployed Cloud Run backend by default:
+
+`https://suestudy-40910896851.europe-west9.run.app`
+
+This means login, record save, and `POST /sync/records` from the release APK go
+to the live API unless `API_BASE_URL` is overridden in `mobile/.env`.
+
 ## Included
 
 - `flutter_riverpod` for state management
@@ -25,3 +34,14 @@ dart run build_runner build --delete-conflicting-outputs
 ```
 
 If you want to keep the files created here, run `flutter create` from the `mobile/` directory so the Android runner is generated around the existing `lib/` and `pubspec.yaml`.
+
+## Release APK
+
+To build smaller Android release APKs, use:
+
+```bash
+./build_release_apk.sh
+```
+
+This builds split APKs per ABI, which keeps each download smaller than a single
+universal APK.

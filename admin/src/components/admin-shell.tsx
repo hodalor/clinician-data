@@ -4,6 +4,7 @@ import {
   Box,
   Burger,
   Button,
+  Divider,
   Group,
   Menu,
   Stack,
@@ -11,6 +12,7 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { useDisclosure, useMediaQuery } from '@mantine/hooks';
+import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../features/auth/use-auth';
 import { canAccess, navItems } from '../routes/permissions';
@@ -22,6 +24,12 @@ export function AdminShell() {
   const isMobile = useMediaQuery('(max-width: 48em)');
   const role = session?.user.role;
   const visibleItems = navItems.filter((item) => canAccess(role, item.roles));
+  const adminGroupPaths = new Set(['/users', '/devices', '/manual', '/audit']);
+  const mainItems = visibleItems.filter((item) => !adminGroupPaths.has(item.path));
+  const adminItems = visibleItems.filter((item) => adminGroupPaths.has(item.path));
+  const [adminOpened, setAdminOpened] = useState(
+    adminItems.some((item) => location.pathname.startsWith(item.path)),
+  );
   const navbarWidth = 220;
 
   return (
@@ -42,8 +50,8 @@ export function AdminShell() {
         navbar: {
           top: 0,
           height: '100vh',
-          background: 'linear-gradient(180deg, #16120d 0%, #221a10 100%)',
-          borderRight: '1px solid #4a3820',
+          background: 'linear-gradient(180deg, #130d24 0%, #201237 100%)',
+          borderRight: '1px solid #4a2f82',
         },
         header: {
           left: isMobile ? 0 : navbarWidth,
@@ -107,14 +115,14 @@ export function AdminShell() {
             px="md"
             py="lg"
             style={{
-              borderBottom: '1px solid #4a3820',
+              borderBottom: '1px solid #4a2f82',
               flexShrink: 0,
             }}
           >
-            <Text fw={800} size="xl" c="#f2d18b" lh={1.1}>
+            <Text fw={800} size="xl" c="#d6c1ff" lh={1.1}>
               SUE Study
             </Text>
-            <Text size="sm" c="#d7c39d" mt={6}>
+            <Text size="sm" c="#bba7e8" mt={6}>
               Admin console
             </Text>
           </Box>
@@ -126,7 +134,7 @@ export function AdminShell() {
             style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}
           >
             <Stack gap={6}>
-              {visibleItems.map((item) => {
+              {mainItems.map((item) => {
                 const isActive = location.pathname.startsWith(item.path);
                 return (
                   <Button
@@ -140,15 +148,15 @@ export function AdminShell() {
                     }}
                     justify="flex-start"
                     variant={isActive ? 'filled' : 'subtle'}
-                    color={isActive ? 'yellow' : 'gray'}
+                    color={isActive ? 'violet' : 'gray'}
                     size="sm"
                     px="sm"
                     style={{
                       minHeight: 40,
                       fontWeight: 600,
-                      color: isActive ? '#16120d' : '#f3e5c6',
+                      color: isActive ? '#120a22' : '#eee6ff',
                       background: isActive
-                        ? 'linear-gradient(180deg, #e5c176 0%, #c89a3f 100%)'
+                        ? 'linear-gradient(180deg, #c6adff 0%, #9167ff 100%)'
                         : 'transparent',
                     }}
                   >
@@ -156,6 +164,67 @@ export function AdminShell() {
                   </Button>
                 );
               })}
+
+              {adminItems.length > 0 ? (
+                <>
+                  <Divider my="xs" color="rgba(160, 124, 255, 0.22)" />
+                  <Button
+                    justify="space-between"
+                    variant="subtle"
+                    size="sm"
+                    px="sm"
+                    onClick={() => setAdminOpened((value) => !value)}
+                    style={{
+                      minHeight: 42,
+                      fontWeight: 700,
+                      color: adminOpened ? '#d7c6ff' : '#eee6ff',
+                      background: 'transparent',
+                    }}
+                    rightSection={
+                      <Text fw={800} c={adminOpened ? '#b79bff' : '#eee6ff'}>
+                        {adminOpened ? '▲' : '▼'}
+                      </Text>
+                    }
+                  >
+                    Admin
+                  </Button>
+
+                  {adminOpened ? (
+                    <Stack gap={6} pl="sm">
+                      {adminItems.map((item) => {
+                        const isActive = location.pathname.startsWith(item.path);
+                        return (
+                          <Button
+                            key={item.path}
+                            component={NavLink}
+                            to={item.path}
+                            onClick={() => {
+                              if (isMobile) {
+                                close();
+                              }
+                            }}
+                            justify="flex-start"
+                            variant={isActive ? 'filled' : 'subtle'}
+                            color={isActive ? 'violet' : 'gray'}
+                            size="sm"
+                            px="sm"
+                            style={{
+                              minHeight: 38,
+                              fontWeight: 600,
+                              color: isActive ? '#130a22' : '#ece2ff',
+                              background: isActive
+                                ? 'linear-gradient(180deg, #b99bff 0%, #8d63ff 100%)'
+                                : 'rgba(255,255,255,0.03)',
+                            }}
+                          >
+                            {item.label}
+                          </Button>
+                        );
+                      })}
+                    </Stack>
+                  ) : null}
+                </>
+              ) : null}
             </Stack>
           </Box>
         </Stack>

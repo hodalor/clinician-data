@@ -33,13 +33,13 @@ export class DevicesController {
   }
 
   @Get()
-  @Roles('ADMIN')
+  @Roles('PI', 'ADMIN')
   listDevices(@CurrentUser() user: AuthenticatedUser) {
     return this.devicesService.listDevices(user);
   }
 
   @Get('requests')
-  @Roles('ADMIN')
+  @Roles('PI', 'ADMIN')
   listDeviceRequests(
     @CurrentUser() user: AuthenticatedUser,
     @Query('status') status?: string,
@@ -48,7 +48,7 @@ export class DevicesController {
   }
 
   @Post(':id/deactivate')
-  @Roles('ADMIN')
+  @Roles('PI', 'ADMIN')
   deactivateDevice(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -57,7 +57,7 @@ export class DevicesController {
   }
 
   @Post(':id/delete')
-  @Roles('ADMIN')
+  @Roles('PI', 'ADMIN')
   deleteDevice(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -67,7 +67,7 @@ export class DevicesController {
   }
 
   @Post('authorise-replacement')
-  @Roles('ADMIN')
+  @Roles('PI', 'ADMIN')
   authoriseReplacement(
     @CurrentUser() user: AuthenticatedUser,
     @Body() payload: { user_id: string; device_id: string },
@@ -76,7 +76,7 @@ export class DevicesController {
   }
 
   @Post('requests/:id/approve')
-  @Roles('ADMIN')
+  @Roles('PI', 'ADMIN')
   approveDeviceRequest(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
@@ -85,7 +85,7 @@ export class DevicesController {
   }
 
   @Post('requests/:id/reject')
-  @Roles('ADMIN')
+  @Roles('PI', 'ADMIN')
   rejectDeviceRequest(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,

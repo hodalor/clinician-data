@@ -82,7 +82,7 @@ export const appRouter = createBrowserRouter([
             ],
           },
           {
-            element: <RoleRoute allowedRoles={['ADMIN']} />,
+            element: <RoleRoute allowedRoles={['PI', 'ADMIN']} />,
             children: [
               { path: '/users', element: <UsersPage /> },
               { path: '/users/new', element: <UserFormPage /> },
