@@ -307,8 +307,8 @@ export class SyncService {
 
       return result;
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown sync failure';
+      const detailedErrors = this.extractSyncErrors(error);
+      const errorMessage = detailedErrors.join('\n');
 
       await this.logFailedSync(
         user.userId,
@@ -327,10 +327,7 @@ export class SyncService {
             : error instanceof ConflictException
               ? 409
               : 500,
-        errors:
-          error instanceof BadRequestException
-            ? this.extractBadRequestMessages(error)
-            : [errorMessage],
+        errors: detailedErrors,
       };
     }
   }
@@ -601,6 +598,123 @@ export class SyncService {
     }
 
     return [error.message];
+  }
+
+  private extractSyncErrors(error: unknown) {
+    if (error instanceof BadRequestException) {
+      return this.extractBadRequestMessages(error);
+    }
+
+    const schemaRules = this.readMongoSchemaRuleMessages(error);
+    if (schemaRules.length > 0) {
+      return schemaRules;
+    }
+
+    return [error instanceof Error ? error.message : 'Unknown sync failure'];
+  }
+
+  private readMongoSchemaRuleMessages(error: unknown) {
+    const details = (error as any)?.errInfo?.details;
+    const rules = details?.schemaRulesNotSatisfied;
+
+    if (!Array.isArray(rules)) {
+      return [];
+    }
+
+    const messages = rules.flatMap((rule: any) =>
+      this.flattenSchemaRuleMessages(rule),
+    );
+
+    return messages
+      .map((message) => message?.toString().trim())
+      .filter((message): message is string => Boolean(message));
+  }
+
+  private flattenSchemaRuleMessages(rule: any, pathPrefix = ''): string[] {
+    if (!rule || typeof rule !== 'object') {
+      return [];
+    }
+
+    const propertyName =
+      typeof rule.propertyName === 'string' ? rule.propertyName : null;
+    const currentPath =
+      propertyName == null
+        ? pathPrefix
+        : pathPrefix
+          ? `${pathPrefix}.${propertyName}`
+          : propertyName;
+
+    const messages: string[] = [];
+
+    if (
+      typeof rule.description === 'string' &&
+      rule.description.trim().length > 0
+    ) {
+      messages.push(
+        currentPath.length === 0
+          ? rule.description.trim()
+          : `${currentPath}: ${rule.description.trim()}`,
+      );
+    }
+
+    if (Array.isArray(rule.details)) {
+      for (const detail of rule.details) {
+        if (
+          typeof detail?.reason === 'string' &&
+          detail.reason.trim().length > 0
+        ) {
+          messages.push(
+            currentPath.length === 0
+              ? detail.reason.trim()
+              : `${currentPath}: ${detail.reason.trim()}`,
+          );
+        }
+
+        if (
+          detail?.operatorName === 'enum' &&
+          Array.isArray(detail?.specifiedAs?.enum)
+        ) {
+          const allowed = detail.specifiedAs.enum.join(', ');
+          messages.push(
+            currentPath.length === 0
+              ? `must be one of: ${allowed}`
+              : `${currentPath} must be one of: ${allowed}`,
+          );
+        }
+
+        if (
+          detail?.operatorName === 'bsonType' &&
+          detail?.specifiedAs?.bsonType
+        ) {
+          const expected = Array.isArray(detail.specifiedAs.bsonType)
+              ? detail.specifiedAs.bsonType.join(', ')
+              : detail.specifiedAs.bsonType.toString();
+          messages.push(
+            currentPath.length === 0
+              ? `must be of type: ${expected}`
+              : `${currentPath} must be of type: ${expected}`,
+          );
+        }
+      }
+    }
+
+    if (Array.isArray(rule.propertiesNotSatisfied)) {
+      for (const nestedRule of rule.propertiesNotSatisfied) {
+        messages.push(
+          ...this.flattenSchemaRuleMessages(nestedRule, currentPath),
+        );
+      }
+    }
+
+    if (Array.isArray(rule.itemsNotSatisfied)) {
+      for (const nestedRule of rule.itemsNotSatisfied) {
+        messages.push(
+          ...this.flattenSchemaRuleMessages(nestedRule, currentPath),
+        );
+      }
+    }
+
+    return [...new Set(messages)];
   }
 
   private readRequiredString(value: unknown, fieldName: string) {

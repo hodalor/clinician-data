@@ -641,6 +641,9 @@ export class RecordsService {
     const warnings: string[] = [];
     const normalized = this.mergeObjects({}, candidate);
 
+    this.normalizeDateField(normalized, 'abstract_date', errors);
+    this.normalizeDateField(normalized, 'eligibility.ed_date', errors);
+
     if (isCreate) {
       if (!this.isNonEmptyString(normalized.study_id)) {
         errors.push('study_id is required');
@@ -915,6 +918,32 @@ export class RecordsService {
     if (typeof value === 'number' && (value < min || value > max)) {
       warnings.push(message);
     }
+  }
+
+  private normalizeDateField(
+    candidate: Record<string, any>,
+    path: string,
+    errors: string[],
+  ) {
+    const value = this.getValueAtPath(candidate, path);
+
+    if (this.isNullish(value) || value instanceof Date) {
+      return;
+    }
+
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      errors.push(`${path} must be a valid date`);
+      return;
+    }
+
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) {
+      errors.push(`${path} must be a valid date`);
+      return;
+    }
+
+    this.setValueAtPath(candidate, path, parsed);
   }
 
   private getResearchRecordEnumValues(path: string) {
