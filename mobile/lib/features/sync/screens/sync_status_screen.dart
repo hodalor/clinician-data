@@ -1,8 +1,45 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../data/local/app_database.dart';
 import '../providers/sync_providers.dart';
+
+void _debugReportSyncStatus({
+  required String hypothesisId,
+  required String location,
+  required String message,
+  Map<String, dynamic>? data,
+}) {
+  // #region debug-point C:sync-status-report
+  final client = HttpClient();
+  client
+      .postUrl(Uri.parse('http://172.20.10.10:7777/event'))
+      .then(
+        (request) {
+          request.headers.contentType = ContentType.json;
+          request.add(
+            utf8.encode(
+              jsonEncode({
+                'sessionId': 'sync-flicker',
+                'runId': 'pre-fix',
+                'hypothesisId': hypothesisId,
+                'location': location,
+                'msg': '[DEBUG] $message',
+                'data': data ?? <String, dynamic>{},
+                'ts': DateTime.now().millisecondsSinceEpoch,
+              }),
+            ),
+          );
+          return request.close();
+        },
+      )
+      .then((response) => response.drain<void>())
+      .catchError((_) {})
+      .whenComplete(client.close);
+  // #endregion
+}
 
 class SyncStatusScreen extends ConsumerWidget {
   const SyncStatusScreen({super.key});
@@ -11,6 +48,23 @@ class SyncStatusScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final syncState = ref.watch(syncManagerProvider);
     final recordsAsync = ref.watch(syncStatusRecordsProvider);
+
+    // #region debug-point C:sync-status-build
+    _debugReportSyncStatus(
+      hypothesisId: 'C',
+      location: 'sync_status_screen.dart:build',
+      message: 'Sync Status screen rebuilt',
+      data: {
+        'isSyncing': syncState.isSyncing,
+        'message': syncState.message,
+        'recordsState': recordsAsync.when(
+          data: (records) => 'data:${records.length}',
+          loading: () => 'loading',
+          error: (error, _) => 'error:$error',
+        ),
+      },
+    );
+    // #endregion
 
     return Scaffold(
       appBar: AppBar(

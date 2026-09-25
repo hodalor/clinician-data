@@ -355,9 +355,8 @@ export class SyncService {
       outcome24,
       outcome_datetime: outcomeDatetime,
       outcome_source: outcomeSource,
-      verified: Boolean(outcome.verified),
-      verified_by: null,
-      verified_at: null,
+      // RA sync should never write QC verification ownership fields.
+      verified: false,
     };
 
     await this.outcomeModel.updateOne(
@@ -365,6 +364,7 @@ export class SyncService {
       {
         $set: update,
         $setOnInsert: { research_record_id: record._id },
+        $unset: { verified_by: '', verified_at: '' },
       },
       {
         upsert: true,

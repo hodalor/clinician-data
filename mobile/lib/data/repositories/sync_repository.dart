@@ -1,8 +1,45 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:drift/drift.dart' as drift;
 import '../local/app_database.dart';
 import '../../features/abstraction/utils/record_payload_mapper.dart';
 import '../remote/sync_api.dart';
 import 'draft_repository.dart';
+
+void _debugReportSyncPayload({
+  required String hypothesisId,
+  required String location,
+  required String message,
+  Map<String, dynamic>? data,
+}) {
+  // #region debug-point A:sync-payload-report
+  final client = HttpClient();
+  client
+      .postUrl(Uri.parse('http://172.20.10.10:7777/event'))
+      .then(
+        (request) {
+          request.headers.contentType = ContentType.json;
+          request.add(
+            utf8.encode(
+              jsonEncode({
+                'sessionId': 'sync-flicker',
+                'runId': 'pre-fix',
+                'hypothesisId': hypothesisId,
+                'location': location,
+                'msg': '[DEBUG] $message',
+                'data': data ?? <String, dynamic>{},
+                'ts': DateTime.now().millisecondsSinceEpoch,
+              }),
+            ),
+          );
+          return request.close();
+        },
+      )
+      .then((response) => response.drain<void>())
+      .catchError((_) {})
+      .whenComplete(client.close);
+  // #endregion
+}
 
 class SyncRepository {
   SyncRepository({
@@ -33,19 +70,42 @@ class SyncRepository {
   }
 
   Future<Map<String, dynamic>> syncBundles(List<DraftRecordBundle> bundles) {
-    return _syncApi.syncRecords(
-      bundles
-          .map(
-            (bundle) => {
-              'client_uuid': bundle.record.clientUuid,
-              'version': bundle.record.version,
-              'record': buildSyncRecordPayloadFromBundle(bundle),
-              if (buildOutcomePayloadFromBundle(bundle) != null)
-                'outcome': buildOutcomePayloadFromBundle(bundle),
-            },
-          )
-          .toList(growable: false),
+    final payload = bundles
+        .map(
+          (bundle) => {
+            'client_uuid': bundle.record.clientUuid,
+            'version': bundle.record.version,
+            'record': buildSyncRecordPayloadFromBundle(bundle),
+            if (buildOutcomePayloadFromBundle(bundle) != null)
+              'outcome': buildOutcomePayloadFromBundle(bundle),
+          },
+        )
+        .toList(growable: false);
+
+    // #region debug-point A:sync-payload-shape
+    _debugReportSyncPayload(
+      hypothesisId: 'A',
+      location: 'sync_repository.dart:syncBundles',
+      message: 'Prepared sync payload batch',
+      data: {
+        'bundleCount': bundles.length,
+        'items': payload
+            .map(
+              (item) => {
+                'client_uuid': item['client_uuid'],
+                'recordKeys': (item['record'] as Map<String, dynamic>).keys.toList(),
+                'hasOutcome': item.containsKey('outcome'),
+                'outcomeKeys': item.containsKey('outcome')
+                    ? ((item['outcome'] as Map<String, dynamic>).keys.toList())
+                    : const [],
+              },
+            )
+            .toList(growable: false),
+      },
     );
+    // #endregion
+
+    return _syncApi.syncRecords(payload);
   }
 
   Future<void> markSyncAttemptStarted(List<int> recordIds) async {
