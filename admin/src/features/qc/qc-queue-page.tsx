@@ -1,10 +1,11 @@
 import { Button, Group, Select, TextInput } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { listRecords } from '../../api/records-api';
 import { ListPageLayout, type TableRow } from '../../components/list-page-layout';
 
 export function QcQueuePage() {
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ['qc-queue'],
     queryFn: () =>
@@ -14,22 +15,34 @@ export function QcQueuePage() {
   });
 
   const records = data?.data ?? [];
-  const rows: TableRow[] = records.map((record) => ({
-    id: record._id,
-    values: {
-      studyId: record.study_id,
-      status: record.status,
-      reviewer: record.data_quality?.reviewer_id ?? 'Assigned reviewer',
-      updatedAt: record.updated_at
-        ? new Date(record.updated_at).toLocaleString()
-        : 'Not available',
-      actions: (
-        <Button component={Link} to={`/qc/${record._id}`} size="sm" variant="light">
-          {record.status === 'QC Required' ? 'Open QC form' : 'Review'}
-        </Button>
-      ),
-    },
-  }));
+  const rows: TableRow[] = records.map((record) => {
+    const opensForm = record.status === 'QC Required';
+    const destination = opensForm ? `/qc/${record._id}/form` : `/qc/${record._id}`;
+
+    return {
+      id: record._id,
+      onClick: () => navigate(destination),
+      values: {
+        studyId: record.study_id,
+        status: record.status,
+        reviewer: record.data_quality?.reviewer_id ?? 'Assigned reviewer',
+        updatedAt: record.updated_at
+          ? new Date(record.updated_at).toLocaleString()
+          : 'Not available',
+        actions: (
+          <Button
+            component={Link}
+            to={destination}
+            size="sm"
+            variant="light"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {opensForm ? 'Open QC form' : 'Review'}
+          </Button>
+        ),
+      },
+    };
+  });
 
   return (
     <ListPageLayout

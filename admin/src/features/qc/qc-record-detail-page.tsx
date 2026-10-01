@@ -14,13 +14,12 @@ import { notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { getQcComparison, getQcReviewSession, resolveQcRecord } from '../../api/qc-api';
 import {
   formatRecordFieldLabel,
   formatRecordValue,
 } from '../records/record-decoders';
-import { QcReabstractionForm } from './qc-reabstraction-form';
 
 export function QcRecordDetailPage() {
   const navigate = useNavigate();
@@ -30,7 +29,6 @@ export function QcRecordDetailPage() {
   const [correctModalOpen, correctModalHandlers] = useDisclosure(false);
   const [returnComment, setReturnComment] = useState('');
   const [correctComment, setCorrectComment] = useState('');
-  const [formOpen, setFormOpen] = useState(false);
 
   const sessionQuery = useQuery({
     queryKey: ['qc-session', recordId],
@@ -100,31 +98,7 @@ export function QcRecordDetailPage() {
   const session = sessionQuery.data;
 
   if (!reabstractionSubmitted) {
-    return (
-      <Stack gap="md">
-        <Alert color="yellow" title="QC review not yet started">
-          Complete an independent re-abstraction before this record can be compared, approved,
-          corrected, returned, or locked.
-        </Alert>
-        {formOpen ? (
-          <Paper withBorder radius="md" p="lg">
-            <QcReabstractionForm
-              recordId={recordId!}
-              onSubmitted={async () => {
-                setFormOpen(false);
-                await queryClient.invalidateQueries({ queryKey: ['qc-session', recordId] });
-              }}
-            />
-          </Paper>
-        ) : (
-          <Group>
-            <Button color="yellow" size="md" onClick={() => setFormOpen(true)}>
-              Open QC form
-            </Button>
-          </Group>
-        )}
-      </Stack>
-    );
+    return <Navigate to={`/qc/${recordId}/form`} replace />;
   }
 
   const comparison = comparisonQuery.data;

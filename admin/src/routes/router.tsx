@@ -6,6 +6,7 @@ import { LoginPage } from '../features/auth/login-page';
 import { DashboardPage } from '../features/dashboard/dashboard-page';
 import { AssignmentsPage } from '../features/assignments/assignments-page';
 import { QcQueuePage } from '../features/qc/qc-queue-page';
+import { QcReabstractionPage } from '../features/qc/qc-reabstraction-page';
 import { QcRecordDetailPage } from '../features/qc/qc-record-detail-page';
 import { RecordDetailPage } from '../features/records/record-detail-page';
 import { RecordsPage } from '../features/records/records-page';
@@ -77,6 +78,7 @@ export const appRouter = createBrowserRouter([
             element: <RoleRoute allowedRoles={['QC', 'PI']} />,
             children: [
               { path: '/qc', element: <QcQueuePage /> },
+              { path: '/qc/:recordId/form', element: <QcReabstractionPage /> },
               { path: '/qc/:recordId', element: <QcRecordDetailPage /> },
               { path: '/duplicates', element: <DuplicatesPage /> },
             ],

@@ -767,10 +767,23 @@ export class QcService {
       return false;
     }
 
-    return (
-      this.isPlainObject(review.re_abstracted_values) &&
-      Object.keys(review.re_abstracted_values).length > 0
-    );
+    return this.hasEnteredValue(review.re_abstracted_values);
+  }
+
+  private hasEnteredValue(value: unknown): boolean {
+    if (value === null || value === undefined || value === '') {
+      return false;
+    }
+
+    if (Array.isArray(value)) {
+      return value.some((item) => this.hasEnteredValue(item));
+    }
+
+    if (this.isPlainObject(value)) {
+      return Object.values(value).some((item) => this.hasEnteredValue(item));
+    }
+
+    return true;
   }
 
   private assertReabstractionSubmitted(review: {
