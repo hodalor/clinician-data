@@ -4,7 +4,27 @@ import type {
   QcAssignResponse,
   QcAssignmentItem,
   QcComparisonResponse,
+  QcReviewSession,
 } from './types';
+
+export function getQcReviewSession(recordId: string) {
+  return requestJson<QcReviewSession>(`/qc/${recordId}/session`, {
+    withAuth: true,
+  });
+}
+
+export function submitQcReabstraction(
+  recordId: string,
+  reAbstractedValues: Record<string, unknown>,
+) {
+  return requestJson(`/qc/${recordId}/reabstract`, {
+    method: 'POST',
+    body: {
+      re_abstracted_values: reAbstractedValues,
+    },
+    withAuth: true,
+  });
+}
 
 export function assignRecordToQc(recordId: string, qcUserId: string) {
   return requestJson<QcAssignResponse>('/qc/assign', {

@@ -108,8 +108,31 @@ export class QcService {
     };
   }
 
+  async getReviewSession(recordId: string, user: AuthenticatedUser) {
+    const review = await this.getAssignedReview(recordId, user);
+    const record = await this.recordModel
+      .findById(review.research_record_id)
+      .select({ status: 1, study_id: 1 })
+      .lean();
+
+    if (!record) {
+      throw new NotFoundException('Record not found');
+    }
+
+    const submitted = this.hasSubmittedReabstraction(review.status);
+
+    return {
+      record_id: review.research_record_id.toString(),
+      record_status: record.status,
+      review_status: review.status,
+      reabstraction_submitted: submitted,
+      ...(submitted ? { study_id: record.study_id ?? null } : {}),
+    };
+  }
+
   async compareRecord(recordId: string, user: AuthenticatedUser) {
     const review = await this.getAssignedReview(recordId, user);
+    this.assertReabstractionSubmitted(review.status);
     const targetRecordId = this.recordsService.parseObjectId(recordId);
     const [record, outcome] = await Promise.all([
       this.recordModel.findById(targetRecordId).lean(),
@@ -153,6 +176,7 @@ export class QcService {
     payload: QcResolveDto,
   ) {
     const review = await this.getAssignedReview(recordId, user);
+    this.assertReabstractionSubmitted(review.status);
     const record = await this.recordModel
       .findById(this.recordsService.parseObjectId(recordId))
       .exec();
@@ -181,6 +205,8 @@ export class QcService {
           );
         }
 
+        const correctionComment = this.readRequiredQcComment(payload);
+
         const candidate = {
           ...record.toObject(),
           ...payload.corrected_values,
@@ -190,7 +216,7 @@ export class QcService {
           data_quality: {
             ...(record.data_quality ?? {}),
             qc_required: false,
-            qc_comment: payload.qc_comment ?? null,
+            qc_comment: correctionComment,
             reviewer_id: review.qc_user_id,
           },
         };
@@ -204,16 +230,18 @@ export class QcService {
         review.status = 'Corrected';
         break;
       }
-      case 'return-to-RA':
+      case 'return-to-RA': {
+        const returnComment = this.readRequiredQcComment(payload);
         record.status = 'Returned for Correction';
         record.data_quality = {
           ...(record.data_quality ?? {}),
           qc_required: true,
-          qc_comment: payload.qc_comment ?? payload.reason ?? null,
+          qc_comment: returnComment,
           reviewer_id: review.qc_user_id,
         };
         review.status = 'Returned to RA';
         break;
+      }
       case 'verify-and-lock':
         record.status = 'Locked';
         record.data_quality = {
@@ -729,6 +757,30 @@ export class QcService {
         },
       );
     }
+  }
+
+  private hasSubmittedReabstraction(reviewStatus: string) {
+    return reviewStatus !== 'Assigned';
+  }
+
+  private assertReabstractionSubmitted(reviewStatus: string) {
+    if (!this.hasSubmittedReabstraction(reviewStatus)) {
+      throw new BadRequestException(
+        'QC re-abstraction has not been submitted',
+      );
+    }
+  }
+
+  private readRequiredQcComment(payload: QcResolveDto) {
+    const comment = (payload.qc_comment ?? payload.reason ?? '').trim();
+
+    if (!comment) {
+      throw new BadRequestException(
+        'A comment is required when correcting or returning a record',
+      );
+    }
+
+    return comment;
   }
 
   private async getAssignedReview(recordId: string, user: AuthenticatedUser) {

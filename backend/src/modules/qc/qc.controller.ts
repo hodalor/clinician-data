@@ -36,6 +36,15 @@ export class QcController {
     return this.qcService.submitReabstractedValues(user, recordId, payload);
   }
 
+  @Get(':recordId/session')
+  @Roles('QC', 'PI')
+  session(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('recordId') recordId: string,
+  ) {
+    return this.qcService.getReviewSession(recordId, user);
+  }
+
   @Get(':recordId/compare')
   @Roles('QC', 'PI')
   compare(

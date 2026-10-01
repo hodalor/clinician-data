@@ -151,6 +151,14 @@ export interface QcAssignResponse {
   assignments?: QcAssignmentItem[];
 }
 
+export interface QcReviewSession {
+  record_id: string;
+  record_status: string;
+  review_status: string;
+  reabstraction_submitted: boolean;
+  study_id?: string | null;
+}
+
 export interface QcComparisonRow {
   field: string;
   ra_value: unknown;

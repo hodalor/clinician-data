@@ -619,6 +619,11 @@ describe('D0 pilot harness', () => {
         .send({ qc_user_id: qc._id.toString() })
         .expect(201);
       await request(app.getHttpServer())
+        .post(`/qc/${recordId}/reabstract`)
+        .set('Authorization', `Bearer ${qcToken}`)
+        .send({ re_abstracted_values: { physiology: { hr: 80 } } })
+        .expect(201);
+      await request(app.getHttpServer())
         .post(`/qc/${recordId}/resolve`)
         .set('Authorization', `Bearer ${qcToken}`)
         .send({
@@ -709,6 +714,11 @@ describe('D0 pilot harness', () => {
         .post('/qc/assign')
         .set('Authorization', `Bearer ${piToken}`)
         .send({ qc_user_id: qc._id.toString() })
+        .expect(201);
+      await request(app.getHttpServer())
+        .post(`/qc/${recordId}/reabstract`)
+        .set('Authorization', `Bearer ${qcToken}`)
+        .send({ re_abstracted_values: { physiology: { rr: 18 } } })
         .expect(201);
       await request(app.getHttpServer())
         .post(`/qc/${recordId}/resolve`)

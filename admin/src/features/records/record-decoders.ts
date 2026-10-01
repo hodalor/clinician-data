@@ -216,6 +216,15 @@ const yesNoFields = new Set([
   'qc_verified',
 ]);
 
+export function recordFieldOptions(field: string) {
+  const labels = valueLabelsByField[field];
+  if (!labels) {
+    return [];
+  }
+
+  return Object.entries(labels).map(([value, label]) => ({ value, label }));
+}
+
 export function formatRecordFieldLabel(field: string) {
   return (
     fieldLabels[field] ??

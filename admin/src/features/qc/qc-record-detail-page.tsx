@@ -15,35 +15,40 @@ import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getQcComparison, resolveQcRecord } from '../../api/qc-api';
-import { getRecord } from '../../api/records-api';
+import { getQcComparison, getQcReviewSession, resolveQcRecord } from '../../api/qc-api';
 import {
   formatRecordFieldLabel,
   formatRecordValue,
 } from '../records/record-decoders';
+import { QcReabstractionForm } from './qc-reabstraction-form';
 
 export function QcRecordDetailPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { recordId } = useParams();
   const [returnModalOpen, returnModalHandlers] = useDisclosure(false);
-  const [returnReason, setReturnReason] = useState('');
+  const [correctModalOpen, correctModalHandlers] = useDisclosure(false);
+  const [returnComment, setReturnComment] = useState('');
+  const [correctComment, setCorrectComment] = useState('');
 
-  const recordQuery = useQuery({
-    queryKey: ['record', recordId],
-    queryFn: () => getRecord(recordId!),
+  const sessionQuery = useQuery({
+    queryKey: ['qc-session', recordId],
+    queryFn: () => getQcReviewSession(recordId!),
     enabled: Boolean(recordId),
   });
+  const reabstractionSubmitted = sessionQuery.data?.reabstraction_submitted === true;
   const comparisonQuery = useQuery({
     queryKey: ['qc-compare', recordId],
     queryFn: () => getQcComparison(recordId!),
-    enabled: Boolean(recordId),
+    enabled: Boolean(recordId) && reabstractionSubmitted,
   });
 
   const correctedValues = useMemo(() => {
     const output: Record<string, unknown> = {};
     for (const row of comparisonQuery.data?.comparisons ?? []) {
-      setNestedValue(output, row.field, row.qc_value);
+      if (row.qc_value !== undefined && row.qc_value !== null) {
+        setNestedValue(output, row.field, row.qc_value);
+      }
     }
     return output;
   }, [comparisonQuery.data?.comparisons]);
@@ -61,18 +66,64 @@ export function QcRecordDetailPage() {
         title: 'QC action saved',
         message: 'The record has been updated.',
       });
+      returnModalHandlers.close();
+      correctModalHandlers.close();
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['qc-queue'] }),
         queryClient.invalidateQueries({ queryKey: ['qc-compare', recordId] }),
+        queryClient.invalidateQueries({ queryKey: ['qc-session', recordId] }),
       ]);
       navigate('/qc');
     },
+    onError: (error) => {
+      notifications.show({
+        color: 'red',
+        title: 'Could not save QC action',
+        message: error.message,
+      });
+    },
   });
 
-  if (recordQuery.error || comparisonQuery.error) {
+  if (sessionQuery.isLoading) {
+    return <Text c="dimmed">Loading QC review...</Text>;
+  }
+
+  if (sessionQuery.error || comparisonQuery.error) {
     return (
       <Alert color="red" title="Could not load QC record">
-        {recordQuery.error?.message ?? comparisonQuery.error?.message}
+        {sessionQuery.error?.message ?? comparisonQuery.error?.message}
+      </Alert>
+    );
+  }
+
+  const session = sessionQuery.data;
+  const awaitingReabstraction =
+    session?.record_status === 'QC Required' && !reabstractionSubmitted;
+
+  if (awaitingReabstraction) {
+    return (
+      <Stack gap="md">
+        <Alert color="yellow" title="QC review not yet started">
+          Complete an independent re-abstraction before this record can be compared, approved,
+          corrected, returned, or locked.
+        </Alert>
+        <Paper withBorder radius="md" p="lg">
+          <QcReabstractionForm
+            recordId={recordId!}
+            onSubmitted={async () => {
+              await queryClient.invalidateQueries({ queryKey: ['qc-session', recordId] });
+            }}
+          />
+        </Paper>
+      </Stack>
+    );
+  }
+
+  if (!reabstractionSubmitted) {
+    return (
+      <Alert color="yellow" title="QC review not yet started">
+        This record does not have a submitted QC re-abstraction yet, so approve, correct, return,
+        and lock stay unavailable.
       </Alert>
     );
   }
@@ -85,15 +136,16 @@ export function QcRecordDetailPage() {
         <Stack gap={4}>
           <Title order={2}>QC record detail</Title>
           <Text c="dimmed">
-            Review the original abstraction against the QC re-abstraction and choose the next action.
+            Review the original abstraction against the submitted QC re-abstraction and choose the
+            next action.
           </Text>
         </Stack>
         <Group gap="xl" mt="md">
           <Text size="sm">
-            <strong>Study ID:</strong> {recordQuery.data?.record.study_id ?? 'Loading...'}
+            <strong>Study ID:</strong> {session?.study_id ?? 'Not available'}
           </Text>
           <Text size="sm">
-            <strong>Status:</strong> {recordQuery.data?.record.status ?? 'Loading...'}
+            <strong>Status:</strong> {session?.record_status ?? 'Loading...'}
           </Text>
           <Text size="sm">
             <strong>Agreement:</strong>{' '}
@@ -113,7 +165,7 @@ export function QcRecordDetailPage() {
           </Table.Thead>
           <Table.Tbody>
             {(comparison?.comparisons ?? []).map((row) => (
-              <Table.Tr key={row.field}>
+              <Table.Tr key={row.field} bg={row.matches ? undefined : 'red.0'}>
                 <Table.Td>{formatRecordFieldLabel(row.field)}</Table.Td>
                 <Table.Td c={row.matches ? undefined : 'red'}>
                   {formatRecordValue(row.field, row.ra_value)}
@@ -136,12 +188,7 @@ export function QcRecordDetailPage() {
         </Button>
         <Button
           variant="outline"
-          onClick={() =>
-            resolveMutation.mutate({
-              action: 'correct',
-              corrected_values: correctedValues,
-            })
-          }
+          onClick={correctModalHandlers.open}
           loading={resolveMutation.isPending}
         >
           Correct
@@ -163,21 +210,58 @@ export function QcRecordDetailPage() {
         </Button>
       </Group>
 
-      <Modal opened={returnModalOpen} onClose={returnModalHandlers.close} title="Return to RA">
+      <Modal
+        opened={correctModalOpen}
+        onClose={correctModalHandlers.close}
+        title="Correct record"
+      >
         <Stack>
+          <Text size="sm" c="dimmed">
+            The QC entry will replace the original values. Leave a note explaining what was wrong.
+          </Text>
           <Textarea
-            label="Reason"
-            placeholder="Explain what needs correction"
+            label="Remarks"
+            placeholder="Explain the correction"
             minRows={4}
-            value={returnReason}
-            onChange={(event) => setReturnReason(event.currentTarget.value)}
+            value={correctComment}
+            onChange={(event) => setCorrectComment(event.currentTarget.value)}
           />
           <Button
+            disabled={correctComment.trim().length === 0}
+            loading={resolveMutation.isPending}
+            onClick={() =>
+              resolveMutation.mutate({
+                action: 'correct',
+                corrected_values: correctedValues,
+                qc_comment: correctComment.trim(),
+              })
+            }
+          >
+            Save correction
+          </Button>
+        </Stack>
+      </Modal>
+
+      <Modal opened={returnModalOpen} onClose={returnModalHandlers.close} title="Return to RA">
+        <Stack>
+          <Text size="sm" c="dimmed">
+            Tell the research assistant what needs to be fixed before this record can continue.
+          </Text>
+          <Textarea
+            label="Remarks"
+            placeholder="Explain what needs correction"
+            minRows={4}
+            value={returnComment}
+            onChange={(event) => setReturnComment(event.currentTarget.value)}
+          />
+          <Button
+            disabled={returnComment.trim().length === 0}
+            loading={resolveMutation.isPending}
             onClick={() =>
               resolveMutation.mutate({
                 action: 'return-to-RA',
-                reason: returnReason,
-                qc_comment: returnReason,
+                reason: returnComment.trim(),
+                qc_comment: returnComment.trim(),
               })
             }
           >
