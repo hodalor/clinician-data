@@ -196,9 +196,14 @@ export class RecordsService {
       .findOne({ research_record_id: record._id })
       .lean();
 
+    const names = await this.loadUserNames([
+      record.extractor_id,
+      record.data_quality?.reviewer_id,
+    ]);
+
     return {
       record: {
-        ...record,
+        ...this.withUserNames(record, names),
         outcome: outcome
           ? {
               outcome24: outcome.outcome24 ?? null,
@@ -255,8 +260,15 @@ export class RecordsService {
       .sort({ updated_at: -1, created_at: -1 })
       .lean();
 
+    const names = await this.loadUserNames(
+      records.flatMap((record) => [
+        record.extractor_id,
+        record.data_quality?.reviewer_id,
+      ]),
+    );
+
     return {
-      data: records,
+      data: records.map((record) => this.withUserNames(record, names)),
     };
   }
 
@@ -475,6 +487,48 @@ export class RecordsService {
     }
 
     return record;
+  }
+
+  private async loadUserNames(
+    ids: Array<Types.ObjectId | string | null | undefined>,
+  ) {
+    const uniqueIds = [
+      ...new Set(
+        ids
+          .filter((id): id is Types.ObjectId | string => Boolean(id))
+          .map((id) => id.toString())
+          .filter((id) => Types.ObjectId.isValid(id)),
+      ),
+    ];
+
+    if (uniqueIds.length === 0) {
+      return new Map<string, string>();
+    }
+
+    const users = await this.userModel
+      .find({
+        _id: { $in: uniqueIds.map((id) => new Types.ObjectId(id)) },
+      })
+      .select({ full_name: 1 })
+      .lean();
+
+    return new Map(users.map((user) => [user._id.toString(), user.full_name]));
+  }
+
+  private withUserNames<
+    T extends {
+      extractor_id?: Types.ObjectId | string | null;
+      data_quality?: { reviewer_id?: Types.ObjectId | string | null } | null;
+    },
+  >(record: T, names: Map<string, string>) {
+    const extractorId = record.extractor_id?.toString();
+    const reviewerId = record.data_quality?.reviewer_id?.toString();
+
+    return {
+      ...record,
+      extractor_name: extractorId ? (names.get(extractorId) ?? null) : null,
+      reviewer_name: reviewerId ? (names.get(reviewerId) ?? null) : null,
+    };
   }
 
   private async findRecordById(id: string) {

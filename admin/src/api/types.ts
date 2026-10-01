@@ -99,6 +99,8 @@ export interface RecordListItem {
   study_id: string;
   status: string;
   extractor_id?: string;
+  extractor_name?: string | null;
+  reviewer_name?: string | null;
   mode?: string;
   version?: number;
   updated_at?: string;

@@ -25,7 +25,7 @@ export function QcQueuePage() {
       values: {
         studyId: record.study_id,
         status: record.status,
-        reviewer: record.data_quality?.reviewer_id ?? 'Assigned reviewer',
+        reviewer: record.reviewer_name || 'Assigned reviewer',
         updatedAt: record.updated_at
           ? new Date(record.updated_at).toLocaleString()
           : 'Not available',

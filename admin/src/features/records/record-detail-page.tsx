@@ -214,7 +214,7 @@ export function RecordDetailPage() {
             <KeyValue label="Study ID" value={record?.study_id} />
             <KeyValue label="Status" value={record?.status} />
             <KeyValue label="Mode" value={record?.mode} />
-            <KeyValue label="Extractor" value={record?.extractor_id} />
+            <KeyValue label="Extractor" value={record?.extractor_name} />
             <KeyValue
               label="QC required"
               value={formatRecordValue(
@@ -455,7 +455,7 @@ function buildSectionEntries(record: RecordListItem | undefined) {
   return sections
     .map((section) => ({
       title: section.title,
-      rows: flattenSectionRows(section.value, section.path),
+      rows: flattenSectionRows(section.value, section.path, record.reviewer_name),
     }))
     .filter((section) => section.rows.length > 0);
 }
@@ -463,6 +463,7 @@ function buildSectionEntries(record: RecordListItem | undefined) {
 function flattenSectionRows(
   value: unknown,
   pathPrefix = '',
+  reviewerName?: string | null,
 ): Array<{ label: string; value: string }> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return [];
@@ -476,8 +477,17 @@ function flattenSectionRows(
     const nextPath = pathPrefix ? `${pathPrefix}.${key}` : key;
     const label = formatRecordFieldLabel(nextPath);
 
+    if (key === 'reviewer_id') {
+      return [
+        {
+          label,
+          value: reviewerName && reviewerName.length > 0 ? reviewerName : 'Empty',
+        },
+      ];
+    }
+
     if (entryValue && typeof entryValue === 'object' && !Array.isArray(entryValue)) {
-      return flattenSectionRows(entryValue, nextPath);
+      return flattenSectionRows(entryValue, nextPath, reviewerName);
     }
 
     if (Array.isArray(entryValue)) {

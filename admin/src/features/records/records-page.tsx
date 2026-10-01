@@ -167,9 +167,12 @@ export function RecordsPage() {
             status: record.status,
             qcStatus: qcAssignmentStatus(record),
             mode: record.mode ?? 'Not set',
-            extractor: record.extractor_id
-              ? (raNameById.get(record.extractor_id) ?? record.extractor_id)
-              : 'Not assigned',
+            extractor:
+              record.extractor_name ??
+              (record.extractor_id
+                ? raNameById.get(record.extractor_id)
+                : undefined) ??
+              'Not assigned',
             qcComment: record.data_quality?.qc_comment ?? 'No comment',
             updatedAt: record.updated_at
               ? new Date(record.updated_at).toLocaleString()
