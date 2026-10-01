@@ -30,6 +30,7 @@ export function QcRecordDetailPage() {
   const [correctModalOpen, correctModalHandlers] = useDisclosure(false);
   const [returnComment, setReturnComment] = useState('');
   const [correctComment, setCorrectComment] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
 
   const sessionQuery = useQuery({
     queryKey: ['qc-session', recordId],
@@ -97,34 +98,32 @@ export function QcRecordDetailPage() {
   }
 
   const session = sessionQuery.data;
-  const awaitingReabstraction =
-    session?.record_status === 'QC Required' && !reabstractionSubmitted;
 
-  if (awaitingReabstraction) {
+  if (!reabstractionSubmitted) {
     return (
       <Stack gap="md">
         <Alert color="yellow" title="QC review not yet started">
           Complete an independent re-abstraction before this record can be compared, approved,
           corrected, returned, or locked.
         </Alert>
-        <Paper withBorder radius="md" p="lg">
-          <QcReabstractionForm
-            recordId={recordId!}
-            onSubmitted={async () => {
-              await queryClient.invalidateQueries({ queryKey: ['qc-session', recordId] });
-            }}
-          />
-        </Paper>
+        {formOpen ? (
+          <Paper withBorder radius="md" p="lg">
+            <QcReabstractionForm
+              recordId={recordId!}
+              onSubmitted={async () => {
+                setFormOpen(false);
+                await queryClient.invalidateQueries({ queryKey: ['qc-session', recordId] });
+              }}
+            />
+          </Paper>
+        ) : (
+          <Group>
+            <Button color="yellow" size="md" onClick={() => setFormOpen(true)}>
+              Open QC form
+            </Button>
+          </Group>
+        )}
       </Stack>
-    );
-  }
-
-  if (!reabstractionSubmitted) {
-    return (
-      <Alert color="yellow" title="QC review not yet started">
-        This record does not have a submitted QC re-abstraction yet, so approve, correct, return,
-        and lock stay unavailable.
-      </Alert>
     );
   }
 

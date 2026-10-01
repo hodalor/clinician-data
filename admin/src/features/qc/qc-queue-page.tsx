@@ -25,7 +25,7 @@ export function QcQueuePage() {
         : 'Not available',
       actions: (
         <Button component={Link} to={`/qc/${record._id}`} size="sm" variant="light">
-          Review
+          {record.status === 'QC Required' ? 'Open QC form' : 'Review'}
         </Button>
       ),
     },

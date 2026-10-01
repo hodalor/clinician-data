@@ -119,7 +119,7 @@ export class QcService {
       throw new NotFoundException('Record not found');
     }
 
-    const submitted = this.hasSubmittedReabstraction(review.status);
+    const submitted = this.hasSubmittedReabstraction(review);
 
     return {
       record_id: review.research_record_id.toString(),
@@ -132,7 +132,7 @@ export class QcService {
 
   async compareRecord(recordId: string, user: AuthenticatedUser) {
     const review = await this.getAssignedReview(recordId, user);
-    this.assertReabstractionSubmitted(review.status);
+    this.assertReabstractionSubmitted(review);
     const targetRecordId = this.recordsService.parseObjectId(recordId);
     const [record, outcome] = await Promise.all([
       this.recordModel.findById(targetRecordId).lean(),
@@ -176,7 +176,7 @@ export class QcService {
     payload: QcResolveDto,
   ) {
     const review = await this.getAssignedReview(recordId, user);
-    this.assertReabstractionSubmitted(review.status);
+    this.assertReabstractionSubmitted(review);
     const record = await this.recordModel
       .findById(this.recordsService.parseObjectId(recordId))
       .exec();
@@ -759,12 +759,25 @@ export class QcService {
     }
   }
 
-  private hasSubmittedReabstraction(reviewStatus: string) {
-    return reviewStatus !== 'Assigned';
+  private hasSubmittedReabstraction(review: {
+    status?: string;
+    re_abstracted_values?: unknown;
+  }) {
+    if (!review.status || review.status === 'Assigned') {
+      return false;
+    }
+
+    return (
+      this.isPlainObject(review.re_abstracted_values) &&
+      Object.keys(review.re_abstracted_values).length > 0
+    );
   }
 
-  private assertReabstractionSubmitted(reviewStatus: string) {
-    if (!this.hasSubmittedReabstraction(reviewStatus)) {
+  private assertReabstractionSubmitted(review: {
+    status?: string;
+    re_abstracted_values?: unknown;
+  }) {
+    if (!this.hasSubmittedReabstraction(review)) {
       throw new BadRequestException(
         'QC re-abstraction has not been submitted',
       );
