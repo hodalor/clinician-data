@@ -1,8 +1,43 @@
 import { requestJson } from './http';
 import type {
   DuplicateQueueResponse,
+  QcAssignResponse,
+  QcAssignmentItem,
   QcComparisonResponse,
 } from './types';
+
+export function assignRecordToQc(recordId: string, qcUserId: string) {
+  return requestJson<QcAssignResponse>('/qc/assign', {
+    method: 'POST',
+    body: {
+      record_id: recordId,
+      qc_user_id: qcUserId,
+    },
+    withAuth: true,
+  });
+}
+
+export function previewQcAutoAssign(payload: {
+  percentage: number;
+  production_only: boolean;
+}) {
+  return requestJson<QcAssignResponse>('/qc/assign', {
+    method: 'POST',
+    body: {
+      ...payload,
+      dry_run: true,
+    },
+    withAuth: true,
+  });
+}
+
+export function commitQcAssignments(assignments: QcAssignmentItem[]) {
+  return requestJson<QcAssignResponse>('/qc/assign', {
+    method: 'POST',
+    body: { assignments },
+    withAuth: true,
+  });
+}
 
 export function getQcComparison(recordId: string) {
   return requestJson<QcComparisonResponse>(`/qc/${recordId}/compare`, {

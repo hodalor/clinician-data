@@ -78,7 +78,14 @@ type RecordListQuery = {
   sats_cat?: string;
   mode?: string;
   eligible?: string;
+  qc_status?: string;
 };
+
+const QC_ASSIGNMENT_STATUSES = {
+  not_assigned: ['Complete', 'Synced'],
+  qc_required: ['QC Required', 'Returned for Correction'],
+  verified: ['Verified', 'Locked'],
+} as const;
 
 const CLIENT_MANAGED_BLOCKED_FIELDS = new Set([
   '_id',
@@ -591,10 +598,40 @@ export class RecordsService {
       filter.status = { $in: statuses };
     }
 
+    if (query.qc_status) {
+      const qcStatus = query.qc_status.trim().toLowerCase();
+      const qcStatuses =
+        QC_ASSIGNMENT_STATUSES[
+          qcStatus as keyof typeof QC_ASSIGNMENT_STATUSES
+        ];
+
+      if (!qcStatuses) {
+        throw new BadRequestException(
+          'qc_status must be not_assigned, qc_required, or verified',
+        );
+      }
+
+      const currentStatuses = (
+        filter.status as { $in?: string[] } | undefined
+      )?.$in;
+      const allowed = currentStatuses
+        ? currentStatuses.filter((status) =>
+            (qcStatuses as readonly string[]).includes(status),
+          )
+        : [...qcStatuses];
+
+      filter.status = { $in: allowed };
+
+      if (qcStatus === 'not_assigned') {
+        filter['data_quality.qc_required'] = { $ne: true };
+      }
+    }
+
     if (
       user.role === 'ADMIN' &&
       !query.assignment_id &&
       !query.status &&
+      !query.qc_status &&
       !query.extractor_id
     ) {
       throw new BadRequestException(

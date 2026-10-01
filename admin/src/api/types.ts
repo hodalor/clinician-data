@@ -130,6 +130,27 @@ export interface RecordListResponse {
   data: RecordListItem[];
 }
 
+export interface QcAssignmentItem {
+  record_id: string;
+  qc_user_id: string;
+}
+
+export interface QcAssignReviewerSummary {
+  qc_user_id: string;
+  full_name: string;
+  assigned_count: number;
+}
+
+export interface QcAssignResponse {
+  assigned_count: number;
+  record_ids?: string[];
+  qc_user_id?: string;
+  reviewer_count?: number;
+  dry_run?: boolean;
+  reviewers?: QcAssignReviewerSummary[];
+  assignments?: QcAssignmentItem[];
+}
+
 export interface QcComparisonRow {
   field: string;
   ra_value: unknown;

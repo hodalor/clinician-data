@@ -6,6 +6,7 @@ import {
   Group,
   Modal,
   Paper,
+  Select,
   SimpleGrid,
   Stack,
   Table,
@@ -18,8 +19,10 @@ import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { assignRecordToQc } from '../../api/qc-api';
 import { getRecord, getRecordAuditHistory, reopenRecord } from '../../api/records-api';
 import type { RecordListItem } from '../../api/types';
+import { listUsers } from '../../api/users-api';
 import { useAuth } from '../auth/use-auth';
 import {
   formatGenericValue,
@@ -40,6 +43,10 @@ export function RecordDetailPage() {
   const queryClient = useQueryClient();
   const [reopenReason, setReopenReason] = useState('');
   const [reopenModalOpen, reopenModalHandlers] = useDisclosure(false);
+  const [reviewerId, setReviewerId] = useState<string | null>(null);
+  const [assignModalOpen, assignModalHandlers] = useDisclosure(false);
+  const canAssignQc =
+    session?.user.role === 'PI' || session?.user.role === 'SUPERADMIN';
 
   const recordQuery = useQuery({
     queryKey: ['record-detail', recordId],
@@ -50,6 +57,37 @@ export function RecordDetailPage() {
     queryKey: ['record-audit', recordId],
     queryFn: () => getRecordAuditHistory(recordId!),
     enabled: Boolean(recordId),
+  });
+  const reviewersQuery = useQuery({
+    queryKey: ['users', 'qc-reviewers'],
+    queryFn: listUsers,
+    enabled: canAssignQc,
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: () => assignRecordToQc(recordId!, reviewerId!),
+    onSuccess: async () => {
+      notifications.show({
+        color: 'green',
+        title: 'Assigned to QC',
+        message: 'The record is now QC Required and will appear in that reviewer\'s queue.',
+      });
+      assignModalHandlers.close();
+      setReviewerId(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['record-detail', recordId] }),
+        queryClient.invalidateQueries({ queryKey: ['record-audit', recordId] }),
+        queryClient.invalidateQueries({ queryKey: ['records'] }),
+        queryClient.invalidateQueries({ queryKey: ['qc-queue'] }),
+      ]);
+    },
+    onError: (error) => {
+      notifications.show({
+        color: 'red',
+        title: 'Could not assign to QC',
+        message: error.message,
+      });
+    },
   });
 
   const reopenMutation = useMutation({
@@ -91,6 +129,13 @@ export function RecordDetailPage() {
   const qcComment = record?.data_quality?.qc_comment;
   const unresolvedDuplicates =
     record?.duplicate_flags?.filter((flag) => !flag.resolved) ?? [];
+  const canAssignThisRecord =
+    canAssignQc &&
+    (record?.status === 'Complete' || record?.status === 'Synced') &&
+    record?.data_quality?.qc_required !== true;
+  const qcReviewers = (reviewersQuery.data?.data ?? []).filter(
+    (user) => user.role === 'QC' && user.status === 'active',
+  );
 
   return (
     <Stack gap="md">
@@ -204,10 +249,18 @@ export function RecordDetailPage() {
           </Text>
           <Stack gap={10} mt="sm">
             <Text size="sm" c="dimmed">
-              QC review, return-to-RA comments, locking, and duplicate resolution are available
-              through the record and QC pages. This panel keeps the main actions one click away.
+              Assign a completed record to a QC reviewer, then open the queue to review it.
             </Text>
             <Group gap="sm">
+              {canAssignQc ? (
+                <Button
+                  color="yellow"
+                  disabled={!canAssignThisRecord}
+                  onClick={assignModalHandlers.open}
+                >
+                  Assign to QC
+                </Button>
+              ) : null}
               <Button component={Link} to="/qc" variant="light" color="yellow">
                 QC queue
               </Button>
@@ -215,6 +268,11 @@ export function RecordDetailPage() {
                 Audit trail
               </Button>
             </Group>
+            {canAssignQc && record && !canAssignThisRecord ? (
+              <Text size="xs" c="dimmed">
+                Assign to QC is available when status is Complete or Synced and QC required is No.
+              </Text>
+            ) : null}
           </Stack>
         </Paper>
       </SimpleGrid>
@@ -275,6 +333,60 @@ export function RecordDetailPage() {
           )}
         </Stack>
       </Paper>
+
+      <Modal
+        opened={assignModalOpen}
+        onClose={() => {
+          assignModalHandlers.close();
+          setReviewerId(null);
+        }}
+        title="Assign to QC"
+      >
+        <Stack gap="md">
+          <Text size="sm" c="dimmed">
+            Choose an active QC reviewer. This record will be marked QC required and added to
+            that reviewer&apos;s queue.
+          </Text>
+          {qcReviewers.length === 0 ? (
+            <Alert color="yellow" title="No QC reviewers">
+              {reviewersQuery.isLoading
+                ? 'Loading QC reviewers...'
+                : 'There are no active QC reviewers to assign.'}
+            </Alert>
+          ) : (
+            <Select
+              label="QC reviewer"
+              placeholder="Choose a reviewer"
+              data={qcReviewers.map((user) => ({
+                value: user.id,
+                label: user.full_name,
+              }))}
+              value={reviewerId}
+              onChange={setReviewerId}
+              searchable
+            />
+          )}
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={() => {
+                assignModalHandlers.close();
+                setReviewerId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="yellow"
+              onClick={() => assignMutation.mutate()}
+              loading={assignMutation.isPending}
+              disabled={!reviewerId}
+            >
+              Confirm assignment
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={reopenModalOpen}

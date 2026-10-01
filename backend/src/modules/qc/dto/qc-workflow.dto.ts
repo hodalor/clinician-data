@@ -1,5 +1,15 @@
-export interface QcAssignDto {
+export interface QcAssignmentItem {
+  record_id: string;
   qc_user_id: string;
+}
+
+export interface QcAssignDto {
+  qc_user_id?: string;
+  record_id?: string;
+  percentage?: number;
+  production_only?: boolean;
+  dry_run?: boolean;
+  assignments?: QcAssignmentItem[];
 }
 
 export interface QcReabstractDto {
