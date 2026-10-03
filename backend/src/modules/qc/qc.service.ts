@@ -10,6 +10,7 @@ import type { Model } from 'mongoose';
 import { isPiRole, isQcOrPiRole } from '../../common/auth/role-access.util.js';
 import type { AuthenticatedUser } from '../../common/auth/authenticated-user.interface.js';
 import { RecordsService } from '../records/records.service.js';
+import { AuditLogModelName } from '../audit/schemas/audit-log.schema.js';
 import { ResearchRecordModelName } from '../records/schemas/research-record.schema.js';
 import { OutcomeModelName } from '../outcomes/schemas/outcome.schema.js';
 import { UserModelName } from '../users/schemas/user.schema.js';
@@ -56,6 +57,14 @@ export class QcService {
     private readonly outcomeModel: Model<OutcomeRecord>,
     @InjectModel(UserModelName)
     private readonly userModel: Model<UserRecord>,
+    @InjectModel(AuditLogModelName)
+    private readonly auditLogModel: Model<{
+      research_record_id: Types.ObjectId;
+      field: string;
+      previous_value: unknown;
+      new_value: unknown;
+      changed_at: Date;
+    }>,
     private readonly recordsService: RecordsService,
   ) {}
 
@@ -126,13 +135,12 @@ export class QcService {
       record_status: record.status,
       review_status: review.status,
       reabstraction_submitted: submitted,
-      ...(submitted ? { study_id: record.study_id ?? null } : {}),
+      study_id: record.study_id ?? null,
     };
   }
 
   async compareRecord(recordId: string, user: AuthenticatedUser) {
     const review = await this.getAssignedReview(recordId, user);
-    this.assertReabstractionSubmitted(review);
     const targetRecordId = this.recordsService.parseObjectId(recordId);
     const [record, outcome] = await Promise.all([
       this.recordModel.findById(targetRecordId).lean(),
@@ -156,18 +164,59 @@ export class QcService {
       review.re_abstracted_values ?? {},
     );
 
-    await this.qcReviewModel.updateOne(
-      { _id: review._id },
+    if (this.hasSubmittedReabstraction(review)) {
+      await this.qcReviewModel.updateOne(
+        { _id: review._id },
+        {
+          $set: {
+            agreement_pct: comparison.agreement_pct,
+            discrepancies: comparison.discrepancies,
+            status: 'Compared',
+          },
+        },
+      );
+    }
+
+    return comparison;
+  }
+
+  async unassignRecord(user: AuthenticatedUser, recordId: string) {
+    const review = await this.getAssignedReview(recordId, user);
+    const record = await this.recordModel.findById(review.research_record_id).exec();
+
+    if (!record) {
+      throw new NotFoundException('Record not found');
+    }
+
+    if (record.status !== 'QC Required') {
+      throw new BadRequestException(
+        'Only QC Required records can be unassigned',
+      );
+    }
+
+    const restoredStatus = await this.completedStatusBeforeQc(record);
+
+    await this.qcReviewModel.deleteOne({ _id: review._id });
+    await this.recordModel.updateOne(
+      { _id: record._id },
       {
         $set: {
-          agreement_pct: comparison.agreement_pct,
-          discrepancies: comparison.discrepancies,
-          status: 'Compared',
+          status: restoredStatus,
+          'data_quality.qc_required': false,
+          updated_at: new Date(),
+          version: (record.version ?? 0) + 1,
+        },
+        $unset: {
+          'data_quality.reviewer_id': '',
+          'data_quality.status_before_qc': '',
         },
       },
     );
 
-    return comparison;
+    return {
+      record_id: record._id.toString(),
+      status: restoredStatus,
+    };
   }
 
   async resolveRecord(
@@ -750,6 +799,7 @@ export class QcService {
           $set: {
             'data_quality.qc_required': true,
             'data_quality.reviewer_id': qcUserId,
+            'data_quality.status_before_qc': record.status,
             updated_at: new Date(),
             status: 'QC Required',
             version: (record.version ?? 0) + 1,
@@ -757,6 +807,32 @@ export class QcService {
         },
       );
     }
+  }
+
+  private async completedStatusBeforeQc(record: {
+    _id: Types.ObjectId;
+    device_id?: string | null;
+    data_quality?: { status_before_qc?: string | null } | null;
+  }) {
+    const stored = record.data_quality?.status_before_qc;
+    if (stored === 'Complete' || stored === 'Synced') {
+      return stored;
+    }
+
+    const audited = await this.auditLogModel
+      .findOne({
+        research_record_id: record._id,
+        field: 'status',
+        new_value: { $in: ['Complete', 'Synced'] },
+      })
+      .sort({ changed_at: -1 })
+      .lean();
+
+    if (audited?.new_value === 'Complete' || audited?.new_value === 'Synced') {
+      return audited.new_value;
+    }
+
+    return record.device_id ? 'Synced' : 'Complete';
   }
 
   private hasSubmittedReabstraction(review: {

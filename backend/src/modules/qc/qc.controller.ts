@@ -45,6 +45,15 @@ export class QcController {
     return this.qcService.getReviewSession(recordId, user);
   }
 
+  @Post(':recordId/unassign')
+  @Roles('QC', 'PI')
+  unassign(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('recordId') recordId: string,
+  ) {
+    return this.qcService.unassignRecord(user, recordId);
+  }
+
   @Get(':recordId/compare')
   @Roles('QC', 'PI')
   compare(

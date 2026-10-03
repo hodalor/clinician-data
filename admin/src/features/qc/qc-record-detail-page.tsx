@@ -14,8 +14,13 @@ import { notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { getQcComparison, getQcReviewSession, resolveQcRecord } from '../../api/qc-api';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  getQcComparison,
+  getQcReviewSession,
+  resolveQcRecord,
+  unassignQcRecord,
+} from '../../api/qc-api';
 import {
   formatRecordFieldLabel,
   formatRecordValue,
@@ -27,6 +32,7 @@ export function QcRecordDetailPage() {
   const { recordId } = useParams();
   const [returnModalOpen, returnModalHandlers] = useDisclosure(false);
   const [correctModalOpen, correctModalHandlers] = useDisclosure(false);
+  const [unassignModalOpen, unassignModalHandlers] = useDisclosure(false);
   const [returnComment, setReturnComment] = useState('');
   const [correctComment, setCorrectComment] = useState('');
 
@@ -39,7 +45,7 @@ export function QcRecordDetailPage() {
   const comparisonQuery = useQuery({
     queryKey: ['qc-compare', recordId],
     queryFn: () => getQcComparison(recordId!),
-    enabled: Boolean(recordId) && reabstractionSubmitted,
+    enabled: Boolean(recordId),
   });
 
   const correctedValues = useMemo(() => {
@@ -51,6 +57,31 @@ export function QcRecordDetailPage() {
     }
     return output;
   }, [comparisonQuery.data?.comparisons]);
+
+  const unassignMutation = useMutation({
+    mutationFn: () => unassignQcRecord(recordId!),
+    onSuccess: async (result) => {
+      notifications.show({
+        color: 'green',
+        title: 'QC assignment removed',
+        message: `The record is back to ${result.status}.`,
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['qc-queue'] }),
+        queryClient.invalidateQueries({ queryKey: ['records'] }),
+        queryClient.invalidateQueries({ queryKey: ['qc-session', recordId] }),
+        queryClient.invalidateQueries({ queryKey: ['qc-compare', recordId] }),
+      ]);
+      navigate('/qc');
+    },
+    onError: (error) => {
+      notifications.show({
+        color: 'red',
+        title: 'Could not unassign QC',
+        message: error.message,
+      });
+    },
+  });
 
   const resolveMutation = useMutation({
     mutationFn: (payload: {
@@ -96,12 +127,8 @@ export function QcRecordDetailPage() {
   }
 
   const session = sessionQuery.data;
-
-  if (!reabstractionSubmitted) {
-    return <Navigate to={`/qc/${recordId}/form`} replace />;
-  }
-
   const comparison = comparisonQuery.data;
+  const canUnassign = session?.record_status === 'QC Required';
 
   return (
     <Stack gap="md">
@@ -109,8 +136,9 @@ export function QcRecordDetailPage() {
         <Stack gap={4}>
           <Title order={2}>QC record detail</Title>
           <Text c="dimmed">
-            Review the original abstraction against the submitted QC re-abstraction and choose the
-            next action.
+            {reabstractionSubmitted
+              ? 'Review the original abstraction against the submitted QC re-abstraction and choose the next action.'
+              : 'QC has not submitted a re-abstraction yet. The QC column stays empty until the form is submitted.'}
           </Text>
         </Stack>
         <Group gap="xl" mt="md">
@@ -153,9 +181,18 @@ export function QcRecordDetailPage() {
       </Paper>
 
       <Group>
+        <Button component={Link} to={`/qc/${recordId}/form`} color="yellow">
+          Open QC form
+        </Button>
+        {canUnassign ? (
+          <Button variant="outline" color="red" onClick={unassignModalHandlers.open}>
+            Unassign QC
+          </Button>
+        ) : null}
         <Button
           onClick={() => resolveMutation.mutate({ action: 'approve' })}
           loading={resolveMutation.isPending}
+          disabled={!reabstractionSubmitted}
         >
           Approve
         </Button>
@@ -163,6 +200,7 @@ export function QcRecordDetailPage() {
           variant="outline"
           onClick={correctModalHandlers.open}
           loading={resolveMutation.isPending}
+          disabled={!reabstractionSubmitted}
         >
           Correct
         </Button>
@@ -171,6 +209,7 @@ export function QcRecordDetailPage() {
           color="orange"
           onClick={returnModalHandlers.open}
           loading={resolveMutation.isPending}
+          disabled={!reabstractionSubmitted}
         >
           Return to RA
         </Button>
@@ -178,10 +217,32 @@ export function QcRecordDetailPage() {
           variant="outline"
           onClick={() => resolveMutation.mutate({ action: 'verify-and-lock' })}
           loading={resolveMutation.isPending}
+          disabled={!reabstractionSubmitted}
         >
           Verify and lock
         </Button>
       </Group>
+
+      <Modal opened={unassignModalOpen} onClose={unassignModalHandlers.close} title="Unassign QC">
+        <Stack>
+          <Text size="sm">
+            Remove this QC assignment and return the record to the status it had before it was
+            sent to QC.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={unassignModalHandlers.close}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={unassignMutation.isPending}
+              onClick={() => unassignMutation.mutate()}
+            >
+              Unassign
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={correctModalOpen}

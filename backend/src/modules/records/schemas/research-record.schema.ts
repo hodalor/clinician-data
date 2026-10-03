@@ -112,6 +112,7 @@ const DataQualitySchema = new Schema(
     qc_required: { type: Boolean },
     reviewer_id: { type: Schema.Types.ObjectId, ref: 'User' },
     qc_comment: { type: String, trim: true },
+    status_before_qc: { type: String, trim: true },
   },
   { _id: false, versionKey: false },
 );

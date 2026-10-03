@@ -47,6 +47,9 @@ export function QcReabstractionPage() {
         <Button component={Link} to="/qc" variant="default">
           Back to QC queue
         </Button>
+        <Button component={Link} to={`/qc/${recordId}`} variant="outline">
+          Open comparison
+        </Button>
       </Group>
       <Alert color="yellow" title="QC review not yet started">
         This form is blank. The original abstraction stays hidden until you submit.

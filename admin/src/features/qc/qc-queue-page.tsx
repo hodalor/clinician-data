@@ -1,11 +1,18 @@
-import { Button, Group, Select, TextInput } from '@mantine/core';
-import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { Button, Group, Modal, Select, Stack, Text, TextInput } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { useDisclosure } from '@mantine/hooks';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { unassignQcRecord } from '../../api/qc-api';
 import { listRecords } from '../../api/records-api';
+import type { RecordListItem } from '../../api/types';
 import { ListPageLayout, type TableRow } from '../../components/list-page-layout';
 
 export function QcQueuePage() {
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [unassignTarget, setUnassignTarget] = useState<RecordListItem | null>(null);
+  const [unassignOpen, unassignHandlers] = useDisclosure(false);
   const { data, isLoading } = useQuery({
     queryKey: ['qc-queue'],
     queryFn: () =>
@@ -14,14 +21,36 @@ export function QcQueuePage() {
       }),
   });
 
+  const unassignMutation = useMutation({
+    mutationFn: (recordId: string) => unassignQcRecord(recordId),
+    onSuccess: async (result) => {
+      notifications.show({
+        color: 'green',
+        title: 'QC assignment removed',
+        message: `The record is back to ${result.status}.`,
+      });
+      unassignHandlers.close();
+      setUnassignTarget(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['qc-queue'] }),
+        queryClient.invalidateQueries({ queryKey: ['records'] }),
+      ]);
+    },
+    onError: (error) => {
+      notifications.show({
+        color: 'red',
+        title: 'Could not unassign QC',
+        message: error.message,
+      });
+    },
+  });
+
   const records = data?.data ?? [];
   const rows: TableRow[] = records.map((record) => {
-    const opensForm = record.status === 'QC Required';
-    const destination = opensForm ? `/qc/${record._id}/form` : `/qc/${record._id}`;
+    const awaitingQc = record.status === 'QC Required';
 
     return {
       id: record._id,
-      onClick: () => navigate(destination),
       values: {
         studyId: record.study_id,
         status: record.status,
@@ -29,15 +58,29 @@ export function QcQueuePage() {
         updatedAt: record.updated_at
           ? new Date(record.updated_at).toLocaleString()
           : 'Not available',
-        actions: (
-          <Button
-            component={Link}
-            to={destination}
-            size="sm"
-            variant="light"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {opensForm ? 'Open QC form' : 'Review'}
+        actions: awaitingQc ? (
+          <Group gap="xs" wrap="nowrap">
+            <Button component={Link} to={`/qc/${record._id}/form`} size="xs" variant="light">
+              Open QC form
+            </Button>
+            <Button component={Link} to={`/qc/${record._id}`} size="xs" variant="outline">
+              Compare
+            </Button>
+            <Button
+              size="xs"
+              variant="outline"
+              color="red"
+              onClick={() => {
+                setUnassignTarget(record);
+                unassignHandlers.open();
+              }}
+            >
+              Unassign
+            </Button>
+          </Group>
+        ) : (
+          <Button component={Link} to={`/qc/${record._id}`} size="sm" variant="light">
+            Review
           </Button>
         ),
       },
@@ -45,6 +88,7 @@ export function QcQueuePage() {
   });
 
   return (
+    <>
     <ListPageLayout
       title="QC queue"
       summaryItems={[
@@ -93,5 +137,43 @@ export function QcQueuePage() {
         </Group>
       }
     />
+    <Modal
+      opened={unassignOpen}
+      onClose={() => {
+        unassignHandlers.close();
+        setUnassignTarget(null);
+      }}
+      title="Unassign QC"
+    >
+      <Stack>
+        <Text size="sm">
+          Remove QC from study {unassignTarget?.study_id ?? 'this record'} and return it to the
+          status it had before assignment.
+        </Text>
+        <Group justify="flex-end">
+          <Button
+            variant="default"
+            onClick={() => {
+              unassignHandlers.close();
+              setUnassignTarget(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="red"
+            loading={unassignMutation.isPending}
+            onClick={() => {
+              if (unassignTarget) {
+                unassignMutation.mutate(unassignTarget._id);
+              }
+            }}
+          >
+            Unassign
+          </Button>
+        </Group>
+      </Stack>
+    </Modal>
+    </>
   );
 }

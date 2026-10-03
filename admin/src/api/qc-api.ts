@@ -59,6 +59,16 @@ export function commitQcAssignments(assignments: QcAssignmentItem[]) {
   });
 }
 
+export function unassignQcRecord(recordId: string) {
+  return requestJson<{ record_id: string; status: string }>(
+    `/qc/${recordId}/unassign`,
+    {
+      method: 'POST',
+      withAuth: true,
+    },
+  );
+}
+
 export function getQcComparison(recordId: string) {
   return requestJson<QcComparisonResponse>(`/qc/${recordId}/compare`, {
     withAuth: true,
