@@ -4,6 +4,7 @@ import type {
   DeletePayload,
   RecordListItem,
   RecordListResponse,
+  UpsertOutcomePayload,
 } from './types';
 
 export function listRecords(params?: Record<string, string | undefined>) {
@@ -28,6 +29,25 @@ export function getRecord(id: string) {
 
 export function getRecordAuditHistory(id: string) {
   return requestJson<AuditHistoryResponse>(`/records/${id}/audit`, {
+    withAuth: true,
+  });
+}
+
+export function updateRecord(id: string, payload: Record<string, unknown>) {
+  return requestJson<{ record: RecordListItem; warnings: string[] }>(`/records/${id}`, {
+    method: 'PUT',
+    body: payload,
+    withAuth: true,
+  });
+}
+
+export function upsertRecordOutcome(id: string, payload: UpsertOutcomePayload) {
+  return requestJson<{
+    record: RecordListItem;
+    outcome: UpsertOutcomePayload;
+  }>(`/records/${id}/outcome`, {
+    method: 'POST',
+    body: payload,
     withAuth: true,
   });
 }

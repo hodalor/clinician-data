@@ -32,7 +32,7 @@ export class RecordsController {
   }
 
   @Put(':id')
-  @Roles('RA')
+  @Roles('RA', 'PI', 'ADMIN')
   updateRecord(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -78,7 +78,7 @@ export class RecordsController {
   }
 
   @Post(':id/outcome')
-  @Roles('RA')
+  @Roles('RA', 'PI', 'ADMIN')
   upsertOutcome(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,

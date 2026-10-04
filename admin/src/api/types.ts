@@ -205,6 +205,12 @@ export interface AuditHistoryResponse {
   data: AuditHistoryEntry[];
 }
 
+export interface UpsertOutcomePayload {
+  outcome24: string;
+  outcome_datetime: string;
+  outcome_source: string;
+}
+
 export interface GlobalAuditEntry extends AuditHistoryEntry {
   research_record_id: string;
   study_id: string | null;

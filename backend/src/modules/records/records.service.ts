@@ -169,7 +169,7 @@ export class RecordsService {
     this.assertBodyIsObject(payload);
     this.assertNoBlockedFields(payload);
 
-    const record = await this.getOwnedEditableRecord(id, user);
+    const record = await this.getEditableRecordForUser(id, user);
     const candidate = this.mergeObjects(record.toObject(), payload);
     candidate.updated_at = new Date();
     candidate.version = (record.version ?? 1) + 1;
@@ -273,7 +273,7 @@ export class RecordsService {
   }
 
   async submitRecord(id: string, user: AuthenticatedUser) {
-    const record = await this.getOwnedEditableRecord(id, user);
+    const record = await this.getEditableRecordForUser(id, user);
 
     if (!SUBMITTABLE_STATUSES.has(record.status as ResearchRecordStatus)) {
       throw new ForbiddenException(
@@ -313,7 +313,7 @@ export class RecordsService {
     user: AuthenticatedUser,
     payload: UpsertOutcomeDto,
   ) {
-    const record = await this.getOwnedEditableRecord(id, user);
+    const record = await this.getEditableRecordForUser(id, user);
     const outcome24 = this.readRequiredString(payload.outcome24, 'outcome24');
     const outcomeSource = this.readRequiredString(
       payload.outcome_source,
@@ -459,7 +459,7 @@ export class RecordsService {
     }
   }
 
-  private async getOwnedEditableRecord(id: string, user: AuthenticatedUser) {
+  private async getEditableRecordForUser(id: string, user: AuthenticatedUser) {
     const record = await this.recordModel
       .findOne({ _id: this.toObjectId(id), deleted_at: null })
       .exec();
@@ -469,8 +469,9 @@ export class RecordsService {
     }
 
     const ownerId = record.extractor_id?.toString();
+    const canEditAnyRecord = isPiOrAdminRole(user.role);
 
-    if (ownerId !== user.userId) {
+    if (!canEditAnyRecord && ownerId !== user.userId) {
       throw new ForbiddenException('You may only modify your own records');
     }
 
@@ -480,7 +481,10 @@ export class RecordsService {
       );
     }
 
-    if (!EDITABLE_STATUSES.has(record.status as ResearchRecordStatus)) {
+    if (
+      !canEditAnyRecord &&
+      !EDITABLE_STATUSES.has(record.status as ResearchRecordStatus)
+    ) {
       throw new ForbiddenException(
         `Records in status "${record.status}" cannot be edited through this endpoint`,
       );

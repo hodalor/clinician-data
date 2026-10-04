@@ -9,6 +9,7 @@ import { QcQueuePage } from '../features/qc/qc-queue-page';
 import { QcReabstractionPage } from '../features/qc/qc-reabstraction-page';
 import { QcRecordDetailPage } from '../features/qc/qc-record-detail-page';
 import { RecordDetailPage } from '../features/records/record-detail-page';
+import { RecordEditPage } from '../features/records/record-edit-page';
 import { RecordsPage } from '../features/records/records-page';
 import { DuplicatesPage } from '../features/duplicates/duplicates-page';
 import { MissingnessPage } from '../features/missingness/missingness-page';
@@ -44,6 +45,7 @@ export const appRouter = createBrowserRouter([
               { path: '/dashboard', element: <DashboardPage /> },
               { path: '/records', element: <RecordsPage /> },
               { path: '/records/:recordId', element: <RecordDetailPage /> },
+              { path: '/records/:recordId/edit', element: <RecordEditPage /> },
               { path: '/missingness', element: <MissingnessPage /> },
               { path: '/audit', element: <AuditPage /> },
               {

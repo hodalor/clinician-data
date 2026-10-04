@@ -126,6 +126,12 @@ export function RecordDetailPage() {
   const canReopen =
     (session?.user.role === 'PI' || session?.user.role === 'SUPERADMIN') &&
     record?.status === 'Locked';
+  const canEditRecord =
+    (session?.user.role === 'PI' ||
+      session?.user.role === 'ADMIN' ||
+      session?.user.role === 'SUPERADMIN') &&
+    record?.status !== 'Locked' &&
+    record?.status !== 'Verified';
   const qcComment = record?.data_quality?.qc_comment;
   const unresolvedDuplicates =
     record?.duplicate_flags?.filter((flag) => !flag.resolved) ?? [];
@@ -180,6 +186,11 @@ export function RecordDetailPage() {
             <Button component={Link} to="/records" variant="white" color="dark">
               Back to records
             </Button>
+            {canEditRecord ? (
+              <Button component={Link} to={`/records/${recordId}/edit`} color="yellow">
+                Edit record
+              </Button>
+            ) : null}
             {canOpenQc ? (
               <Button component={Link} to={`/qc/${recordId}`} color="yellow">
                 Open QC review
@@ -362,7 +373,7 @@ export function RecordDetailPage() {
                 label: user.full_name,
               }))}
               value={reviewerId}
-              onChange={setReviewerId}
+              onChange={(value) => setReviewerId(value)}
               searchable
             />
           )}
