@@ -36,6 +36,7 @@ type RecordEditDraft = {
   ed_date: string;
   ed_time: string;
   triage_time: string;
+  triaged_by: string;
   age: string;
   eligible: string;
   exclusion_code: string;
@@ -43,6 +44,11 @@ type RecordEditDraft = {
   sex: string;
   referral: string;
   referring_health_center: string;
+  referring_health_center_other: string;
+  referral_date: string;
+  referral_time: string;
+  referred_by: string;
+  lmuth_called: string;
   dm: string;
   htn: string;
   asthma: string;
@@ -56,6 +62,7 @@ type RecordEditDraft = {
   tews_total: string;
   discriminator_yes: string;
   discriminator_type: string;
+  discriminator_detail: string;
   documentation_complete: string;
   temp: string;
   hr: string;
@@ -70,12 +77,19 @@ type RecordEditDraft = {
   chief_complaint_verbatim: string;
   complaint_group: string;
   multiple_complaints: string;
+  multiple_complaints_details: string;
   initial_destination: string;
   clinician_time: string;
   treatment_time: string;
+  doctor_review_datetime: string;
+  doctor_diagnosis: string;
+  system_diagnosis: string;
+  doctor_review_disposition: string;
   outcome24: string;
   outcome_datetime: string;
   outcome_source: string;
+  final_outcome: string;
+  final_outcome_date: string;
 };
 
 const emptyDraft: RecordEditDraft = {
@@ -83,6 +97,7 @@ const emptyDraft: RecordEditDraft = {
   ed_date: '',
   ed_time: '',
   triage_time: '',
+  triaged_by: '',
   age: '',
   eligible: '',
   exclusion_code: '',
@@ -90,6 +105,11 @@ const emptyDraft: RecordEditDraft = {
   sex: '',
   referral: '',
   referring_health_center: '',
+  referring_health_center_other: '',
+  referral_date: '',
+  referral_time: '',
+  referred_by: '',
+  lmuth_called: '',
   dm: '',
   htn: '',
   asthma: '',
@@ -103,6 +123,7 @@ const emptyDraft: RecordEditDraft = {
   tews_total: '',
   discriminator_yes: '',
   discriminator_type: '',
+  discriminator_detail: '',
   documentation_complete: '',
   temp: '',
   hr: '',
@@ -117,12 +138,19 @@ const emptyDraft: RecordEditDraft = {
   chief_complaint_verbatim: '',
   complaint_group: '',
   multiple_complaints: '',
+  multiple_complaints_details: '',
   initial_destination: '',
   clinician_time: '',
   treatment_time: '',
+  doctor_review_datetime: '',
+  doctor_diagnosis: '',
+  system_diagnosis: '',
+  doctor_review_disposition: '',
   outcome24: '',
   outcome_datetime: '',
   outcome_source: '',
+  final_outcome: '',
+  final_outcome_date: '',
 };
 
 const yesNoOptions = [
@@ -173,7 +201,7 @@ export function RecordEditPage() {
 
       if (hasPartialOutcome(draft)) {
         throw new Error(
-          'When outcome is entered, outcome, date and time, and source are all required.',
+          'When outcome is entered, the 24-hour outcome and source are required.',
         );
       }
 
@@ -333,6 +361,13 @@ export function RecordEditPage() {
                 value={draft.triage_time}
                 onChange={(event) => update({ triage_time: event.currentTarget.value })}
               />
+              <Select
+                label="Triaged by"
+                data={recordFieldOptions('eligibility.triaged_by')}
+                value={draft.triaged_by || null}
+                onChange={(value) => update({ triaged_by: value ?? '' })}
+                clearable
+              />
               <TextInput
                 label="Age in years"
                 value={draft.age}
@@ -400,6 +435,47 @@ export function RecordEditPage() {
                   }
                 />
               ) : null}
+              {draft.referral === '1' ? (
+                <TextInput
+                  label="Other health center detail"
+                  value={draft.referring_health_center_other}
+                  onChange={(event) =>
+                    update({ referring_health_center_other: event.currentTarget.value })
+                  }
+                />
+              ) : null}
+              {draft.referral === '1' ? (
+                <TextInput
+                  label="Referral date"
+                  type="date"
+                  value={draft.referral_date}
+                  onChange={(event) => update({ referral_date: event.currentTarget.value })}
+                />
+              ) : null}
+              {draft.referral === '1' ? (
+                <TextInput
+                  label="Referral time"
+                  type="time"
+                  value={draft.referral_time}
+                  onChange={(event) => update({ referral_time: event.currentTarget.value })}
+                />
+              ) : null}
+              {draft.referral === '1' ? (
+                <Select
+                  label="Referred by"
+                  data={recordFieldOptions('patient.referred_by')}
+                  value={draft.referred_by || null}
+                  onChange={(value) => update({ referred_by: value ?? '' })}
+                  clearable
+                />
+              ) : null}
+              <Select
+                label="Was LMUTH called?"
+                data={recordFieldOptions('patient.lmuth_called')}
+                value={draft.lmuth_called || null}
+                onChange={(value) => update({ lmuth_called: value ?? '' })}
+                clearable
+              />
               <Select
                 label="Diabetes mellitus"
                 data={recordFieldOptions('patient.comorbidities.dm')}
@@ -456,7 +532,7 @@ export function RecordEditPage() {
                 onChange={(value) => update({ comorb_any: value ?? '' })}
                 clearable
               />
-              {draft.sex === '2' ? (
+              {draft.sex !== '1' ? (
                 <Select
                   label="Pregnancy test"
                   data={recordFieldOptions('patient.preg_test')}
@@ -501,6 +577,15 @@ export function RecordEditPage() {
                   value={draft.discriminator_type || null}
                   onChange={(value) => update({ discriminator_type: value ?? '' })}
                   clearable
+                />
+              ) : null}
+              {draft.discriminator_yes === 'true' && draft.discriminator_type === '18' ? (
+                <TextInput
+                  label="Other documented discriminator"
+                  value={draft.discriminator_detail}
+                  onChange={(event) =>
+                    update({ discriminator_detail: event.currentTarget.value })
+                  }
                 />
               ) : null}
               <Select
@@ -597,6 +682,15 @@ export function RecordEditPage() {
                 onChange={(value) => update({ multiple_complaints: value ?? '' })}
                 clearable
               />
+              {draft.multiple_complaints === 'true' ? (
+                <TextInput
+                  label="Additional complaints detail"
+                  value={draft.multiple_complaints_details}
+                  onChange={(event) =>
+                    update({ multiple_complaints_details: event.currentTarget.value })
+                  }
+                />
+              ) : null}
             </SimpleGrid>
           ) : null}
 
@@ -629,6 +723,33 @@ export function RecordEditPage() {
                 value={draft.treatment_time}
                 onChange={(event) => update({ treatment_time: event.currentTarget.value })}
               />
+              <TextInput
+                label="Doctor review date and time"
+                type="datetime-local"
+                value={draft.doctor_review_datetime}
+                onChange={(event) =>
+                  update({ doctor_review_datetime: event.currentTarget.value })
+                }
+              />
+              <TextInput
+                label="Doctor diagnosis"
+                value={draft.doctor_diagnosis}
+                onChange={(event) => update({ doctor_diagnosis: event.currentTarget.value })}
+              />
+              <Select
+                label="System diagnosis"
+                data={recordFieldOptions('process.system_diagnosis')}
+                value={draft.system_diagnosis || null}
+                onChange={(value) => update({ system_diagnosis: value ?? '' })}
+                clearable
+              />
+              <TextInput
+                label="Doctor review disposition"
+                value={draft.doctor_review_disposition}
+                onChange={(event) =>
+                  update({ doctor_review_disposition: event.currentTarget.value })
+                }
+              />
             </SimpleGrid>
           ) : null}
 
@@ -653,6 +774,19 @@ export function RecordEditPage() {
                 value={draft.outcome_source || null}
                 onChange={(value) => update({ outcome_source: value ?? '' })}
                 clearable
+              />
+              <Select
+                label="Final outcome"
+                data={recordFieldOptions('outcome.final_outcome')}
+                value={draft.final_outcome || null}
+                onChange={(value) => update({ final_outcome: value ?? '' })}
+                clearable
+              />
+              <TextInput
+                label="Final outcome date"
+                type="date"
+                value={draft.final_outcome_date}
+                onChange={(event) => update({ final_outcome_date: event.currentTarget.value })}
               />
             </SimpleGrid>
           ) : null}
@@ -705,6 +839,7 @@ function buildDraftFromRecord(record: RecordListItem): RecordEditDraft {
     ed_date: formatDateInput(getNestedValue(record, 'eligibility.ed_date')),
     ed_time: formatTimeInput(getNestedValue(record, 'eligibility.ed_time')),
     triage_time: formatTimeInput(getNestedValue(record, 'eligibility.triage_time')),
+    triaged_by: valueToString(getNestedValue(record, 'eligibility.triaged_by')),
     age: valueToString(getNestedValue(record, 'eligibility.age')),
     eligible: formatBooleanSelect(getNestedValue(record, 'eligibility.eligible')),
     exclusion_code: valueToString(getNestedValue(record, 'eligibility.exclusion_code')),
@@ -714,6 +849,13 @@ function buildDraftFromRecord(record: RecordListItem): RecordEditDraft {
     referring_health_center: valueToString(
       getNestedValue(record, 'patient.referring_health_center'),
     ),
+    referring_health_center_other: valueToString(
+      getNestedValue(record, 'patient.referring_health_center_other'),
+    ),
+    referral_date: formatDateInput(getNestedValue(record, 'patient.referral_date')),
+    referral_time: formatTimeInput(getNestedValue(record, 'patient.referral_time')),
+    referred_by: valueToString(getNestedValue(record, 'patient.referred_by')),
+    lmuth_called: valueToString(getNestedValue(record, 'patient.lmuth_called')),
     dm: valueToString(getNestedValue(record, 'patient.comorbidities.dm')),
     htn: valueToString(getNestedValue(record, 'patient.comorbidities.htn')),
     asthma: valueToString(getNestedValue(record, 'patient.comorbidities.asthma')),
@@ -731,6 +873,7 @@ function buildDraftFromRecord(record: RecordListItem): RecordEditDraft {
       getNestedValue(record, 'sats.discriminator_yes'),
     ),
     discriminator_type: valueToString(getNestedValue(record, 'sats.discriminator_type')),
+    discriminator_detail: valueToString(getNestedValue(record, 'sats.discriminator_detail')),
     documentation_complete: formatBooleanSelect(
       getNestedValue(record, 'sats.documentation_complete'),
     ),
@@ -751,12 +894,25 @@ function buildDraftFromRecord(record: RecordListItem): RecordEditDraft {
     multiple_complaints: formatBooleanSelect(
       getNestedValue(record, 'presentation.multiple_complaints'),
     ),
+    multiple_complaints_details: valueToString(
+      getNestedValue(record, 'presentation.multiple_complaints_details'),
+    ),
     initial_destination: valueToString(record.initial_destination),
     clinician_time: formatTimeInput(getNestedValue(record, 'process.clinician_time')),
     treatment_time: formatTimeInput(getNestedValue(record, 'process.treatment_time')),
+    doctor_review_datetime: formatDateTimeLocal(
+      getNestedValue(record, 'process.doctor_review_datetime'),
+    ),
+    doctor_diagnosis: valueToString(getNestedValue(record, 'process.doctor_diagnosis')),
+    system_diagnosis: valueToString(getNestedValue(record, 'process.system_diagnosis')),
+    doctor_review_disposition: valueToString(
+      getNestedValue(record, 'process.doctor_review_disposition'),
+    ),
     outcome24: valueToString(getNestedValue(record, 'outcome.outcome24')),
     outcome_datetime: formatDateTimeLocal(getNestedValue(record, 'outcome.outcome_datetime')),
     outcome_source: valueToString(getNestedValue(record, 'outcome.outcome_source')),
+    final_outcome: valueToString(getNestedValue(record, 'outcome.final_outcome')),
+    final_outcome_date: formatDateInput(getNestedValue(record, 'outcome.final_outcome_date')),
   };
 }
 
@@ -770,6 +926,7 @@ function buildRecordUpdatePayload(draft: RecordEditDraft) {
         ed_date: blankToUndefined(draft.ed_date),
         ed_time: blankToUndefined(draft.ed_time),
         triage_time: blankToUndefined(draft.triage_time),
+        triaged_by: blankToUndefined(draft.triaged_by),
         age: toNumber(draft.age),
         eligible,
         exclusion_code:
@@ -786,6 +943,17 @@ function buildRecordUpdatePayload(draft: RecordEditDraft) {
           draft.referral === '1'
             ? blankToUndefined(draft.referring_health_center)
             : undefined,
+        referring_health_center_other:
+          draft.referral === '1'
+            ? blankToUndefined(draft.referring_health_center_other)
+            : undefined,
+        referral_date:
+          draft.referral === '1' ? blankToUndefined(draft.referral_date) : undefined,
+        referral_time:
+          draft.referral === '1' ? blankToUndefined(draft.referral_time) : undefined,
+        referred_by:
+          draft.referral === '1' ? blankToUndefined(draft.referred_by) : undefined,
+        lmuth_called: blankToUndefined(draft.lmuth_called),
         comorbidities: compact({
           dm: blankToUndefined(draft.dm),
           htn: blankToUndefined(draft.htn),
@@ -799,7 +967,7 @@ function buildRecordUpdatePayload(draft: RecordEditDraft) {
               : undefined,
         }),
         comorb_any: blankToUndefined(draft.comorb_any),
-        preg_test: draft.sex === '2' ? blankToUndefined(draft.preg_test) : undefined,
+        preg_test: draft.sex !== '1' ? blankToUndefined(draft.preg_test) : undefined,
       }),
       sats: compact({
         sats_cat: blankToUndefined(draft.sats_cat),
@@ -808,6 +976,10 @@ function buildRecordUpdatePayload(draft: RecordEditDraft) {
         discriminator_type:
           draft.discriminator_yes === 'true'
             ? blankToUndefined(draft.discriminator_type)
+            : undefined,
+        discriminator_detail:
+          draft.discriminator_yes === 'true' && draft.discriminator_type === '18'
+            ? blankToUndefined(draft.discriminator_detail)
             : undefined,
         documentation_complete: toBoolean(draft.documentation_complete),
       }),
@@ -827,10 +999,18 @@ function buildRecordUpdatePayload(draft: RecordEditDraft) {
         chief_complaint_verbatim: blankToUndefined(draft.chief_complaint_verbatim),
         complaint_group: blankToUndefined(draft.complaint_group),
         multiple_complaints: toBoolean(draft.multiple_complaints),
+        multiple_complaints_details:
+          draft.multiple_complaints === 'true'
+            ? blankToUndefined(draft.multiple_complaints_details)
+            : undefined,
       }),
       process: compact({
         clinician_time: blankToUndefined(draft.clinician_time),
         treatment_time: blankToUndefined(draft.treatment_time),
+        doctor_review_datetime: blankToUndefined(draft.doctor_review_datetime),
+        doctor_diagnosis: blankToUndefined(draft.doctor_diagnosis),
+        system_diagnosis: blankToUndefined(draft.system_diagnosis),
+        doctor_review_disposition: blankToUndefined(draft.doctor_review_disposition),
       }),
     }) ?? {}
   );
@@ -851,15 +1031,26 @@ function buildOutcomePayload(draft: RecordEditDraft) {
 
   return {
     outcome24,
-    outcome_datetime: new Date(outcomeDatetime).toISOString(),
     outcome_source: outcomeSource,
+    ...(outcomeDatetime
+      ? { outcome_datetime: new Date(outcomeDatetime).toISOString() }
+      : {}),
+    ...(blankToUndefined(draft.final_outcome)
+      ? { final_outcome: blankToUndefined(draft.final_outcome)! }
+      : {}),
+    ...(blankToUndefined(draft.final_outcome_date)
+      ? {
+          final_outcome_date: new Date(
+            blankToUndefined(draft.final_outcome_date)!,
+          ).toISOString(),
+        }
+      : {}),
   };
 }
 
 function hasPartialOutcome(draft: RecordEditDraft) {
   const values = [
     blankToUndefined(draft.outcome24),
-    blankToUndefined(draft.outcome_datetime),
     blankToUndefined(draft.outcome_source),
   ];
   return values.some(Boolean) && !values.every(Boolean);

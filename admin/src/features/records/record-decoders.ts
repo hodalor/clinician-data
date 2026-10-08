@@ -23,6 +23,25 @@ const referralLabels = {
   '9': '9 Unknown',
 } as const;
 
+const triagedByLabels = {
+  paramedic: 'Paramedic',
+  nurse: 'Nurse',
+  doctor: 'Doctor',
+} as const;
+
+const referredByLabels = {
+  nurse: 'Nurse',
+  clinical_officer: 'Clinical officer',
+  doctor: 'Doctor',
+  not_indicated: 'Not indicated',
+} as const;
+
+const lmuthCalledLabels = {
+  '1': '1 Yes',
+  '0': '0 No',
+  '9': '9 Not recorded',
+} as const;
+
 const exclusionLabels = {
   '1': '1 Age < 16',
   '2': '2 Dead on arrival / Blue',
@@ -49,7 +68,12 @@ const complaintGroupLabels = {
   '7': '7 Obstetric / gynaecological',
   '8': '8 Endocrine / metabolic',
   '9': '9 Poisoning / toxicological',
-  '10': '10 Other',
+  '10': '10 Renal / urologic',
+  '11': '11 Mental health / behavioural',
+  '12': '12 ENT / eye / dental',
+  '13': '13 Dermatology / allergic',
+  '14': '14 Bites / stings / envenomation',
+  '15': '15 Other',
 } as const;
 
 const discriminatorTypeLabels = {
@@ -105,6 +129,11 @@ const outcomeSourceLabels = {
   '6': '6 Multiple sources',
 } as const;
 
+const finalOutcomeLabels = {
+  '1': '1 Alive',
+  '2': '2 Dead',
+} as const;
+
 export const satsCategoryOptions = Object.entries(satsCategoryLabels).map(
   ([value, label]) => ({
     value,
@@ -116,6 +145,7 @@ const fieldLabels: Record<string, string> = {
   'eligibility.ed_date': 'ED date',
   'eligibility.ed_time': 'ED time',
   'eligibility.triage_time': 'Triage time',
+  'eligibility.triaged_by': 'Triaged by',
   'eligibility.age': 'Age',
   'eligibility.eligible': 'Eligible',
   'eligibility.exclusion_code': 'Exclusion code',
@@ -123,6 +153,11 @@ const fieldLabels: Record<string, string> = {
   'patient.sex': 'Sex',
   'patient.referral': 'Referral',
   'patient.referring_health_center': 'Health center patient is coming from',
+  'patient.referring_health_center_other': 'Other referring health center',
+  'patient.referral_date': 'Referral date',
+  'patient.referral_time': 'Referral time',
+  'patient.referred_by': 'Referred by',
+  'patient.lmuth_called': 'Was LMUTH called?',
   'patient.comorbidities.dm': 'Diabetes mellitus',
   'patient.comorbidities.htn': 'Hypertension',
   'patient.comorbidities.asthma': 'Asthma',
@@ -136,6 +171,7 @@ const fieldLabels: Record<string, string> = {
   'sats.tews_total': 'TEWS total',
   'sats.discriminator_yes': 'Discriminator documented',
   'sats.discriminator_type': 'Discriminator type',
+  'sats.discriminator_detail': 'Discriminator detail',
   'sats.documentation_complete': 'SATS complete',
   'physiology.temp': 'Temperature',
   'physiology.hr': 'Heart rate',
@@ -151,9 +187,14 @@ const fieldLabels: Record<string, string> = {
   'presentation.chief_complaint_verbatim': 'Chief complaint',
   'presentation.complaint_group': 'Complaint group',
   'presentation.multiple_complaints': 'Multiple complaints',
+  'presentation.multiple_complaints_details': 'Multiple complaints detail',
   initial_destination: 'Disposition',
   'process.clinician_time': 'Time LMUTH was called by the referring facility',
   'process.treatment_time': 'Time treatment was initiated at LMUTH',
+  'process.doctor_review_datetime': 'Doctor review date and time',
+  'process.doctor_diagnosis': 'Doctor diagnosis',
+  'process.system_diagnosis': 'System diagnosis',
+  'process.doctor_review_disposition': 'Doctor review disposition',
   'data_quality.miss_sats': 'Miss SATS',
   'data_quality.miss_tews': 'Miss TEWS',
   'data_quality.miss_vitals': 'Miss vitals',
@@ -169,6 +210,8 @@ const fieldLabels: Record<string, string> = {
   'outcome.outcome24': '24-hour outcome',
   'outcome.outcome_datetime': 'Outcome date and time',
   'outcome.outcome_source': 'Outcome source',
+  'outcome.final_outcome': 'Final outcome',
+  'outcome.final_outcome_date': 'Final outcome date',
   'outcome.verified': 'Outcome verified',
   'outcome.verified_by': 'Outcome verified by',
   'outcome.verified_at': 'Outcome verified at',
@@ -177,8 +220,11 @@ const fieldLabels: Record<string, string> = {
 
 const valueLabelsByField: Record<string, Record<string, string>> = {
   'eligibility.exclusion_code': exclusionLabels,
+  'eligibility.triaged_by': triagedByLabels,
   'patient.sex': sexLabels,
   'patient.referral': referralLabels,
+  'patient.referred_by': referredByLabels,
+  'patient.lmuth_called': lmuthCalledLabels,
   'patient.comorbidities.dm': yesNoNotRecorded,
   'patient.comorbidities.htn': yesNoNotRecorded,
   'patient.comorbidities.asthma': yesNoNotRecorded,
@@ -194,10 +240,12 @@ const valueLabelsByField: Record<string, Record<string, string>> = {
   'physiology.avpu': avpuLabels,
   'physiology.trauma': yesNoNotRecorded,
   'presentation.complaint_group': complaintGroupLabels,
+  'process.system_diagnosis': complaintGroupLabels,
   outcome24: outcome24Labels,
   outcome_source: outcomeSourceLabels,
   'outcome.outcome24': outcome24Labels,
   'outcome.outcome_source': outcomeSourceLabels,
+  'outcome.final_outcome': finalOutcomeLabels,
 };
 
 const yesNoFields = new Set([

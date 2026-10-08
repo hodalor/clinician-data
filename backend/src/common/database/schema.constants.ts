@@ -33,17 +33,26 @@ export const COMORBIDITY_CODES = ['0', '1', '9'] as const;
 export const PREG_TEST_CODES = ['0', '1', '8', '9'] as const;
 export const SATS_CATEGORY_CODES = ['1', '2', '3', '4'] as const;
 export const RDT_CODES = ['0', '1', '8', '9'] as const;
+export const LMUTH_CALLED_CODES = ['1', '0', '9'] as const;
 export const MOBILITY_CODES = ['0', '1', '2', '9'] as const;
 export const AVPU_CODES = ['0', '1', '2', '3', '9'] as const;
 export const TRAUMA_CODES = ['0', '1', '9'] as const;
 export const OUTCOME24_CODES = ['1', '2', '3', '4'] as const;
+export const FINAL_OUTCOME_CODES = ['1', '2'] as const;
+export const TRIAGED_BY_CODES = ['paramedic', 'nurse', 'doctor'] as const;
+export const REFERRED_BY_CODES = [
+  'nurse',
+  'clinical_officer',
+  'doctor',
+  'not_indicated',
+] as const;
 
 export const DISCRIMINATOR_TYPE_CODES = Object.freeze(
   Array.from({ length: 19 }, (_, index) => `${index}`),
 );
 
 export const COMPLAINT_GROUP_CODES = Object.freeze(
-  Array.from({ length: 10 }, (_, index) => `${index + 1}`),
+  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'],
 );
 
 export const OUTCOME_SOURCE_CODES = Object.freeze(

@@ -12,6 +12,7 @@ class RaRecordDraft {
     this.edDate,
     this.edTime,
     this.triageTime,
+    this.triagedBy,
     this.age,
     this.eligible,
     this.exclusionCode,
@@ -19,6 +20,11 @@ class RaRecordDraft {
     this.sex,
     this.referral,
     this.referringHealthCenter,
+    this.referringHealthCenterOther,
+    this.referralDate,
+    this.referralTime,
+    this.referredBy,
+    this.lmuthCalled,
     this.dm,
     this.htn,
     this.asthma,
@@ -31,6 +37,7 @@ class RaRecordDraft {
     this.tewsTotal,
     this.discriminatorYes,
     this.discriminatorType,
+    this.discriminatorDetail,
     this.documentationComplete,
     this.temp,
     this.hr,
@@ -46,12 +53,19 @@ class RaRecordDraft {
     this.chiefComplaintVerbatim,
     this.complaintGroup,
     this.multipleComplaints,
+    this.multipleComplaintsDetails,
     this.initialDestination,
     this.clinicianTime,
     this.treatmentTime,
+    this.doctorReviewDatetime,
+    this.doctorDiagnosis,
+    this.systemDiagnosis,
+    this.doctorReviewDisposition,
     this.outcome24,
     this.outcomeDatetime,
     this.outcomeSource,
+    this.finalOutcome,
+    this.finalOutcomeDate,
     this.duplicateFlagsJson,
     this.version = 1,
   });
@@ -64,6 +78,7 @@ class RaRecordDraft {
   final DateTime? edDate;
   final String? edTime;
   final String? triageTime;
+  final String? triagedBy;
   final int? age;
   final bool? eligible;
   final String? exclusionCode;
@@ -71,6 +86,11 @@ class RaRecordDraft {
   final String? sex;
   final String? referral;
   final String? referringHealthCenter;
+  final String? referringHealthCenterOther;
+  final DateTime? referralDate;
+  final String? referralTime;
+  final String? referredBy;
+  final String? lmuthCalled;
   final bool? dm;
   final bool? htn;
   final bool? asthma;
@@ -83,6 +103,7 @@ class RaRecordDraft {
   final int? tewsTotal;
   final bool? discriminatorYes;
   final String? discriminatorType;
+  final String? discriminatorDetail;
   final bool? documentationComplete;
   final double? temp;
   final int? hr;
@@ -98,12 +119,19 @@ class RaRecordDraft {
   final String? chiefComplaintVerbatim;
   final String? complaintGroup;
   final bool? multipleComplaints;
+  final String? multipleComplaintsDetails;
   final String? initialDestination;
   final String? clinicianTime;
   final String? treatmentTime;
+  final DateTime? doctorReviewDatetime;
+  final String? doctorDiagnosis;
+  final String? systemDiagnosis;
+  final String? doctorReviewDisposition;
   final String? outcome24;
   final DateTime? outcomeDatetime;
   final String? outcomeSource;
+  final String? finalOutcome;
+  final DateTime? finalOutcomeDate;
   final String? duplicateFlagsJson;
   final int version;
 
@@ -119,7 +147,7 @@ class RaRecordDraft {
   }
 
   bool get hasCompleteOutcome =>
-      outcome24 != null && outcomeDatetime != null && outcomeSource != null;
+      outcome24 != null && outcomeSource != null;
 
   bool get skipsClinicalSections => eligible == false;
 
@@ -132,6 +160,7 @@ class RaRecordDraft {
     Object? edDate = _unset,
     Object? edTime = _unset,
     Object? triageTime = _unset,
+    Object? triagedBy = _unset,
     Object? age = _unset,
     Object? eligible = _unset,
     Object? exclusionCode = _unset,
@@ -139,6 +168,11 @@ class RaRecordDraft {
     Object? sex = _unset,
     Object? referral = _unset,
     Object? referringHealthCenter = _unset,
+    Object? referringHealthCenterOther = _unset,
+    Object? referralDate = _unset,
+    Object? referralTime = _unset,
+    Object? referredBy = _unset,
+    Object? lmuthCalled = _unset,
     Object? dm = _unset,
     Object? htn = _unset,
     Object? asthma = _unset,
@@ -151,6 +185,7 @@ class RaRecordDraft {
     Object? tewsTotal = _unset,
     Object? discriminatorYes = _unset,
     Object? discriminatorType = _unset,
+    Object? discriminatorDetail = _unset,
     Object? documentationComplete = _unset,
     Object? temp = _unset,
     Object? hr = _unset,
@@ -166,12 +201,19 @@ class RaRecordDraft {
     Object? chiefComplaintVerbatim = _unset,
     Object? complaintGroup = _unset,
     Object? multipleComplaints = _unset,
+    Object? multipleComplaintsDetails = _unset,
     Object? initialDestination = _unset,
     Object? clinicianTime = _unset,
     Object? treatmentTime = _unset,
+    Object? doctorReviewDatetime = _unset,
+    Object? doctorDiagnosis = _unset,
+    Object? systemDiagnosis = _unset,
+    Object? doctorReviewDisposition = _unset,
     Object? outcome24 = _unset,
     Object? outcomeDatetime = _unset,
     Object? outcomeSource = _unset,
+    Object? finalOutcome = _unset,
+    Object? finalOutcomeDate = _unset,
     Object? duplicateFlagsJson = _unset,
     Object? version = _unset,
   }) {
@@ -188,6 +230,9 @@ class RaRecordDraft {
       triageTime: identical(triageTime, _unset)
           ? this.triageTime
           : triageTime as String?,
+      triagedBy: identical(triagedBy, _unset)
+          ? this.triagedBy
+          : triagedBy as String?,
       age: identical(age, _unset) ? this.age : age as int?,
       eligible: identical(eligible, _unset) ? this.eligible : eligible as bool?,
       exclusionCode: identical(exclusionCode, _unset)
@@ -202,6 +247,22 @@ class RaRecordDraft {
       referringHealthCenter: identical(referringHealthCenter, _unset)
           ? this.referringHealthCenter
           : referringHealthCenter as String?,
+      referringHealthCenterOther:
+          identical(referringHealthCenterOther, _unset)
+              ? this.referringHealthCenterOther
+              : referringHealthCenterOther as String?,
+      referralDate: identical(referralDate, _unset)
+          ? this.referralDate
+          : referralDate as DateTime?,
+      referralTime: identical(referralTime, _unset)
+          ? this.referralTime
+          : referralTime as String?,
+      referredBy: identical(referredBy, _unset)
+          ? this.referredBy
+          : referredBy as String?,
+      lmuthCalled: identical(lmuthCalled, _unset)
+          ? this.lmuthCalled
+          : lmuthCalled as String?,
       dm: identical(dm, _unset) ? this.dm : dm as bool?,
       htn: identical(htn, _unset) ? this.htn : htn as bool?,
       asthma: identical(asthma, _unset) ? this.asthma : asthma as bool?,
@@ -224,6 +285,9 @@ class RaRecordDraft {
       discriminatorType: identical(discriminatorType, _unset)
           ? this.discriminatorType
           : discriminatorType as String?,
+      discriminatorDetail: identical(discriminatorDetail, _unset)
+          ? this.discriminatorDetail
+          : discriminatorDetail as String?,
       documentationComplete: identical(documentationComplete, _unset)
           ? this.documentationComplete
           : documentationComplete as bool?,
@@ -248,6 +312,10 @@ class RaRecordDraft {
       multipleComplaints: identical(multipleComplaints, _unset)
           ? this.multipleComplaints
           : multipleComplaints as bool?,
+      multipleComplaintsDetails:
+          identical(multipleComplaintsDetails, _unset)
+              ? this.multipleComplaintsDetails
+              : multipleComplaintsDetails as String?,
       initialDestination: identical(initialDestination, _unset)
           ? this.initialDestination
           : initialDestination as String?,
@@ -257,6 +325,18 @@ class RaRecordDraft {
       treatmentTime: identical(treatmentTime, _unset)
           ? this.treatmentTime
           : treatmentTime as String?,
+      doctorReviewDatetime: identical(doctorReviewDatetime, _unset)
+          ? this.doctorReviewDatetime
+          : doctorReviewDatetime as DateTime?,
+      doctorDiagnosis: identical(doctorDiagnosis, _unset)
+          ? this.doctorDiagnosis
+          : doctorDiagnosis as String?,
+      systemDiagnosis: identical(systemDiagnosis, _unset)
+          ? this.systemDiagnosis
+          : systemDiagnosis as String?,
+      doctorReviewDisposition: identical(doctorReviewDisposition, _unset)
+          ? this.doctorReviewDisposition
+          : doctorReviewDisposition as String?,
       outcome24:
           identical(outcome24, _unset) ? this.outcome24 : outcome24 as String?,
       outcomeDatetime: identical(outcomeDatetime, _unset)
@@ -265,6 +345,12 @@ class RaRecordDraft {
       outcomeSource: identical(outcomeSource, _unset)
           ? this.outcomeSource
           : outcomeSource as String?,
+      finalOutcome: identical(finalOutcome, _unset)
+          ? this.finalOutcome
+          : finalOutcome as String?,
+      finalOutcomeDate: identical(finalOutcomeDate, _unset)
+          ? this.finalOutcomeDate
+          : finalOutcomeDate as DateTime?,
       duplicateFlagsJson: identical(duplicateFlagsJson, _unset)
           ? this.duplicateFlagsJson
           : duplicateFlagsJson as String?,
@@ -282,6 +368,7 @@ class RaRecordDraft {
       edDate: bundle.eligibility?.edDate,
       edTime: bundle.eligibility?.edTime,
       triageTime: bundle.eligibility?.triageTime,
+      triagedBy: bundle.eligibility?.triagedBy,
       age: bundle.eligibility?.age,
       eligible: bundle.eligibility?.eligible,
       exclusionCode: bundle.eligibility?.exclusionCode,
@@ -289,6 +376,11 @@ class RaRecordDraft {
       sex: bundle.patient?.sex,
       referral: bundle.patient?.referral,
       referringHealthCenter: bundle.patient?.referringHealthCenter,
+      referringHealthCenterOther: bundle.patient?.referringHealthCenterOther,
+      referralDate: bundle.patient?.referralDate,
+      referralTime: bundle.patient?.referralTime,
+      referredBy: bundle.patient?.referredBy,
+      lmuthCalled: bundle.patient?.lmuthCalled,
       dm: _decodeBinaryCode(bundle.patient?.dm),
       htn: _decodeBinaryCode(bundle.patient?.htn),
       asthma: _decodeBinaryCode(bundle.patient?.asthma),
@@ -301,6 +393,7 @@ class RaRecordDraft {
       tewsTotal: bundle.sats?.tewsTotal,
       discriminatorYes: bundle.sats?.discriminatorYes,
       discriminatorType: bundle.sats?.discriminatorType,
+      discriminatorDetail: bundle.sats?.discriminatorDetail,
       documentationComplete: bundle.sats?.documentationComplete,
       temp: bundle.physiology?.temp,
       hr: bundle.physiology?.hr,
@@ -316,12 +409,19 @@ class RaRecordDraft {
       chiefComplaintVerbatim: bundle.presentation?.chiefComplaintVerbatim,
       complaintGroup: bundle.presentation?.complaintGroup,
       multipleComplaints: bundle.presentation?.multipleComplaints,
+      multipleComplaintsDetails: bundle.presentation?.multipleComplaintsDetails,
       initialDestination: bundle.record.initialDestination,
       clinicianTime: bundle.process?.clinicianTime,
       treatmentTime: bundle.process?.treatmentTime,
+      doctorReviewDatetime: bundle.process?.doctorReviewDatetime,
+      doctorDiagnosis: bundle.process?.doctorDiagnosis,
+      systemDiagnosis: bundle.process?.systemDiagnosis,
+      doctorReviewDisposition: bundle.process?.doctorReviewDisposition,
       outcome24: bundle.outcome?.outcome24,
       outcomeDatetime: bundle.outcome?.outcomeDatetime,
       outcomeSource: bundle.outcome?.outcomeSource,
+      finalOutcome: bundle.outcome?.finalOutcome,
+      finalOutcomeDate: bundle.outcome?.finalOutcomeDate,
       duplicateFlagsJson: bundle.record.duplicateFlagsJson,
       version: bundle.record.version,
     );

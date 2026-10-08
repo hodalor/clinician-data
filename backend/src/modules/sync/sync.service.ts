@@ -346,17 +346,24 @@ export class SyncService {
       outcome.outcome_source,
       'outcome_source',
     );
-    const outcomeDatetime = this.readDate(
-      outcome.outcome_datetime,
-      'outcome_datetime',
-    );
+    const outcomeDatetime = outcome.outcome_datetime
+      ? this.readDate(outcome.outcome_datetime, 'outcome_datetime')
+      : undefined;
+    const finalOutcome = this.isNonEmptyString(outcome.final_outcome)
+      ? String(outcome.final_outcome).trim()
+      : undefined;
+    const finalOutcomeDate = outcome.final_outcome_date
+      ? this.readDate(outcome.final_outcome_date, 'final_outcome_date')
+      : undefined;
 
     const update = {
       outcome24,
-      outcome_datetime: outcomeDatetime,
       outcome_source: outcomeSource,
       // RA sync should never write QC verification ownership fields.
       verified: false,
+      ...(outcomeDatetime ? { outcome_datetime: outcomeDatetime } : {}),
+      ...(finalOutcome ? { final_outcome: finalOutcome } : {}),
+      ...(finalOutcomeDate ? { final_outcome_date: finalOutcomeDate } : {}),
     };
 
     await this.outcomeModel.updateOne(
@@ -364,7 +371,13 @@ export class SyncService {
       {
         $set: update,
         $setOnInsert: { research_record_id: record._id },
-        $unset: { verified_by: '', verified_at: '' },
+        $unset: {
+          ...(outcomeDatetime ? {} : { outcome_datetime: '' }),
+          ...(finalOutcome ? {} : { final_outcome: '' }),
+          ...(finalOutcomeDate ? {} : { final_outcome_date: '' }),
+          verified_by: '',
+          verified_at: '',
+        },
       },
       {
         upsert: true,
@@ -749,5 +762,9 @@ export class SyncService {
 
   private isPlainObject(value: unknown): value is Record<string, unknown> {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  private isNonEmptyString(value: unknown) {
+    return typeof value === 'string' && value.trim().length > 0;
   }
 }

@@ -6,6 +6,7 @@ import {
   DISCRIMINATOR_TYPE_CODES,
   EXCLUSION_CODES,
   MOBILITY_CODES,
+  LMUTH_CALLED_CODES,
   PREG_TEST_CODES,
   RDT_CODES,
   REFERRAL_CODES,
@@ -13,7 +14,9 @@ import {
   RESEARCH_RECORD_STATUSES,
   SATS_CATEGORY_CODES,
   SEX_CODES,
+  REFERRED_BY_CODES,
   TRAUMA_CODES,
+  TRIAGED_BY_CODES,
 } from '../../../common/database/schema.constants.js';
 import { auditTrailPlugin } from '../../audit/audit-trail.plugin.js';
 
@@ -24,6 +27,7 @@ const EligibilitySchema = new Schema(
     ed_date: { type: Date },
     ed_time: { type: String, trim: true },
     triage_time: { type: String, trim: true },
+    triaged_by: { type: String, enum: TRIAGED_BY_CODES },
     age: { type: Number },
     eligible: { type: Boolean },
     exclusion_code: { type: String, enum: EXCLUSION_CODES },
@@ -50,6 +54,11 @@ const PatientSchema = new Schema(
     sex: { type: String, enum: SEX_CODES },
     referral: { type: String, enum: REFERRAL_CODES },
     referring_health_center: { type: String, trim: true },
+    referring_health_center_other: { type: String, trim: true },
+    referral_date: { type: Date },
+    referral_time: { type: String, trim: true },
+    referred_by: { type: String, enum: REFERRED_BY_CODES },
+    lmuth_called: { type: String, enum: LMUTH_CALLED_CODES },
     comorbidities: { type: ComorbiditiesSchema },
     comorb_any: { type: String, enum: COMORBIDITY_CODES },
     preg_test: { type: String, enum: PREG_TEST_CODES },
@@ -63,6 +72,7 @@ const SatsSchema = new Schema(
     tews_total: { type: Number },
     discriminator_yes: { type: Boolean },
     discriminator_type: { type: String, enum: DISCRIMINATOR_TYPE_CODES },
+    discriminator_detail: { type: String, trim: true },
     documentation_complete: { type: Boolean },
   },
   { _id: false, versionKey: false },
@@ -90,6 +100,7 @@ const PresentationSchema = new Schema(
     chief_complaint_verbatim: { type: String, trim: true },
     complaint_group: { type: String, enum: COMPLAINT_GROUP_CODES },
     multiple_complaints: { type: Boolean },
+    multiple_complaints_details: { type: String, trim: true },
   },
   { _id: false, versionKey: false },
 );
@@ -98,6 +109,10 @@ const ProcessSchema = new Schema(
   {
     clinician_time: { type: String, trim: true },
     treatment_time: { type: String, trim: true },
+    doctor_review_datetime: { type: Date },
+    doctor_diagnosis: { type: String, trim: true },
+    system_diagnosis: { type: String, enum: COMPLAINT_GROUP_CODES },
+    doctor_review_disposition: { type: String, trim: true },
   },
   { _id: false, versionKey: false },
 );

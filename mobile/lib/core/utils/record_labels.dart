@@ -10,6 +10,25 @@ const Map<String, String> referralLabels = {
   '9': '9 Unknown',
 };
 
+const Map<String, String> triagedByLabels = {
+  'paramedic': 'Paramedic',
+  'nurse': 'Nurse',
+  'doctor': 'Doctor',
+};
+
+const Map<String, String> referredByLabels = {
+  'nurse': 'Nurse',
+  'clinical_officer': 'Clinical officer',
+  'doctor': 'Doctor',
+  'not_indicated': 'Not indicated',
+};
+
+const Map<String, String> lmuthCalledLabels = {
+  '1': '1 Yes',
+  '0': '0 No',
+  '9': '9 Not recorded',
+};
+
 const Map<String, String> satsCategoryLabels = {
   '1': '1 Green',
   '2': '2 Yellow',
@@ -33,6 +52,11 @@ const Map<String, String> outcomeSourceLabels = {
   '6': '6 Multiple sources',
 };
 
+const Map<String, String> finalOutcomeLabels = {
+  '1': '1 Alive',
+  '2': '2 Dead',
+};
+
 const Map<String, String> complaintGroupLabels = {
   '1': '1 Trauma / injury',
   '2': '2 Cardiovascular / chest pain',
@@ -43,7 +67,12 @@ const Map<String, String> complaintGroupLabels = {
   '7': '7 Obstetric / gynaecological',
   '8': '8 Endocrine / metabolic',
   '9': '9 Poisoning / toxicological',
-  '10': '10 Other',
+  '10': '10 Renal / urologic',
+  '11': '11 Mental health / behavioural',
+  '12': '12 ENT / eye / dental',
+  '13': '13 Dermatology / allergic',
+  '14': '14 Bites / stings / envenomation',
+  '15': '15 Other',
 };
 
 const Map<String, String> discriminatorTypeLabels = {

@@ -23,6 +23,7 @@ type QcDraft = {
   ed_date: string;
   ed_time: string;
   triage_time: string;
+  triaged_by: string;
   age: string;
   eligible: string;
   exclusion_code: string;
@@ -30,6 +31,11 @@ type QcDraft = {
   sex: string;
   referral: string;
   referring_health_center: string;
+  referring_health_center_other: string;
+  referral_date: string;
+  referral_time: string;
+  referred_by: string;
+  lmuth_called: string;
   dm: string;
   htn: string;
   asthma: string;
@@ -43,6 +49,7 @@ type QcDraft = {
   tews_total: string;
   discriminator_yes: string;
   discriminator_type: string;
+  discriminator_detail: string;
   documentation_complete: string;
   temp: string;
   hr: string;
@@ -57,12 +64,19 @@ type QcDraft = {
   chief_complaint_verbatim: string;
   complaint_group: string;
   multiple_complaints: string;
+  multiple_complaints_details: string;
   initial_destination: string;
   clinician_time: string;
   treatment_time: string;
+  doctor_review_datetime: string;
+  doctor_diagnosis: string;
+  system_diagnosis: string;
+  doctor_review_disposition: string;
   outcome24: string;
   outcome_datetime: string;
   outcome_source: string;
+  final_outcome: string;
+  final_outcome_date: string;
 };
 
 const emptyDraft: QcDraft = {
@@ -70,6 +84,7 @@ const emptyDraft: QcDraft = {
   ed_date: '',
   ed_time: '',
   triage_time: '',
+  triaged_by: '',
   age: '',
   eligible: '',
   exclusion_code: '',
@@ -77,6 +92,11 @@ const emptyDraft: QcDraft = {
   sex: '',
   referral: '',
   referring_health_center: '',
+  referring_health_center_other: '',
+  referral_date: '',
+  referral_time: '',
+  referred_by: '',
+  lmuth_called: '',
   dm: '',
   htn: '',
   asthma: '',
@@ -90,6 +110,7 @@ const emptyDraft: QcDraft = {
   tews_total: '',
   discriminator_yes: '',
   discriminator_type: '',
+  discriminator_detail: '',
   documentation_complete: '',
   temp: '',
   hr: '',
@@ -104,12 +125,19 @@ const emptyDraft: QcDraft = {
   chief_complaint_verbatim: '',
   complaint_group: '',
   multiple_complaints: '',
+  multiple_complaints_details: '',
   initial_destination: '',
   clinician_time: '',
   treatment_time: '',
+  doctor_review_datetime: '',
+  doctor_diagnosis: '',
+  system_diagnosis: '',
+  doctor_review_disposition: '',
   outcome24: '',
   outcome_datetime: '',
   outcome_source: '',
+  final_outcome: '',
+  final_outcome_date: '',
 };
 
 const yesNoOptions = [
@@ -230,6 +258,13 @@ export function QcReabstractionForm({
             value={draft.triage_time}
             onChange={(event) => update({ triage_time: event.currentTarget.value })}
           />
+          <Select
+            label="Triaged by"
+            data={recordFieldOptions('eligibility.triaged_by')}
+            value={draft.triaged_by || null}
+            onChange={(value) => update({ triaged_by: value ?? '' })}
+            clearable
+          />
           <TextInput
             label="Age in years"
             value={draft.age}
@@ -292,6 +327,47 @@ export function QcReabstractionForm({
               }
             />
           ) : null}
+          {draft.referral === '1' ? (
+            <TextInput
+              label="Other health center detail"
+              value={draft.referring_health_center_other}
+              onChange={(event) =>
+                update({ referring_health_center_other: event.currentTarget.value })
+              }
+            />
+          ) : null}
+          {draft.referral === '1' ? (
+            <TextInput
+              label="Referral date"
+              type="date"
+              value={draft.referral_date}
+              onChange={(event) => update({ referral_date: event.currentTarget.value })}
+            />
+          ) : null}
+          {draft.referral === '1' ? (
+            <TextInput
+              label="Referral time"
+              type="time"
+              value={draft.referral_time}
+              onChange={(event) => update({ referral_time: event.currentTarget.value })}
+            />
+          ) : null}
+          {draft.referral === '1' ? (
+            <Select
+              label="Referred by"
+              data={recordFieldOptions('patient.referred_by')}
+              value={draft.referred_by || null}
+              onChange={(value) => update({ referred_by: value ?? '' })}
+              clearable
+            />
+          ) : null}
+          <Select
+            label="Was LMUTH called?"
+            data={recordFieldOptions('patient.lmuth_called')}
+            value={draft.lmuth_called || null}
+            onChange={(value) => update({ lmuth_called: value ?? '' })}
+            clearable
+          />
           <Select label="Diabetes mellitus" data={recordFieldOptions('patient.comorbidities.dm')} value={draft.dm || null} onChange={(value) => update({ dm: value ?? '' })} clearable />
           <Select label="Hypertension" data={recordFieldOptions('patient.comorbidities.htn')} value={draft.htn || null} onChange={(value) => update({ htn: value ?? '' })} clearable />
           <Select label="Asthma" data={recordFieldOptions('patient.comorbidities.asthma')} value={draft.asthma || null} onChange={(value) => update({ asthma: value ?? '' })} clearable />
@@ -306,7 +382,7 @@ export function QcReabstractionForm({
             />
           ) : null}
           <Select label="Any comorbidity" data={recordFieldOptions('patient.comorb_any')} value={draft.comorb_any || null} onChange={(value) => update({ comorb_any: value ?? '' })} clearable />
-          {draft.sex === '2' ? (
+          {draft.sex !== '1' ? (
             <Select
               label="Pregnancy test"
               data={recordFieldOptions('patient.preg_test')}
@@ -322,9 +398,16 @@ export function QcReabstractionForm({
         <SimpleGrid cols={{ base: 1, md: 2 }}>
           <Select label="SATS category" data={recordFieldOptions('sats.sats_cat')} value={draft.sats_cat || null} onChange={(value) => update({ sats_cat: value ?? '' })} clearable />
           <TextInput label="TEWS total" value={draft.tews_total} onChange={(event) => update({ tews_total: event.currentTarget.value })} />
-          <Select label="Discriminator documented" data={yesNoOptions} value={draft.discriminator_yes || null} onChange={(value) => update({ discriminator_yes: value ?? '' })} clearable />
+          <Select label="Discriminator documented" data={yesNoOptions} value={draft.discriminator_yes || null} onChange={(value) => update({ discriminator_yes: value ?? '', discriminator_type: value === 'true' ? draft.discriminator_type : '', discriminator_detail: value === 'true' ? draft.discriminator_detail : '' })} clearable />
           {draft.discriminator_yes === 'true' ? (
             <Select label="Discriminator type" data={recordFieldOptions('sats.discriminator_type')} value={draft.discriminator_type || null} onChange={(value) => update({ discriminator_type: value ?? '' })} clearable />
+          ) : null}
+          {draft.discriminator_yes === 'true' && draft.discriminator_type === '18' ? (
+            <TextInput
+              label="Other documented discriminator"
+              value={draft.discriminator_detail}
+              onChange={(event) => update({ discriminator_detail: event.currentTarget.value })}
+            />
           ) : null}
           <Select label="SATS complete" data={yesNoOptions} value={draft.documentation_complete || null} onChange={(value) => update({ documentation_complete: value ?? '' })} clearable />
         </SimpleGrid>
@@ -354,6 +437,13 @@ export function QcReabstractionForm({
           />
           <Select label="Complaint group" data={recordFieldOptions('presentation.complaint_group')} value={draft.complaint_group || null} onChange={(value) => update({ complaint_group: value ?? '' })} clearable />
           <Select label="Multiple complaints" data={yesNoOptions} value={draft.multiple_complaints || null} onChange={(value) => update({ multiple_complaints: value ?? '' })} clearable />
+          {draft.multiple_complaints === 'true' ? (
+            <TextInput
+              label="Additional complaints detail"
+              value={draft.multiple_complaints_details}
+              onChange={(event) => update({ multiple_complaints_details: event.currentTarget.value })}
+            />
+          ) : null}
         </SimpleGrid>
       ) : null}
 
@@ -386,6 +476,29 @@ export function QcReabstractionForm({
             value={draft.treatment_time}
             onChange={(event) => update({ treatment_time: event.currentTarget.value })}
           />
+          <TextInput
+            label="Doctor review date and time"
+            type="datetime-local"
+            value={draft.doctor_review_datetime}
+            onChange={(event) => update({ doctor_review_datetime: event.currentTarget.value })}
+          />
+          <TextInput
+            label="Doctor diagnosis"
+            value={draft.doctor_diagnosis}
+            onChange={(event) => update({ doctor_diagnosis: event.currentTarget.value })}
+          />
+          <Select
+            label="System diagnosis"
+            data={recordFieldOptions('process.system_diagnosis')}
+            value={draft.system_diagnosis || null}
+            onChange={(value) => update({ system_diagnosis: value ?? '' })}
+            clearable
+          />
+          <TextInput
+            label="Doctor review disposition"
+            value={draft.doctor_review_disposition}
+            onChange={(event) => update({ doctor_review_disposition: event.currentTarget.value })}
+          />
         </SimpleGrid>
       ) : null}
 
@@ -399,6 +512,19 @@ export function QcReabstractionForm({
             onChange={(event) => update({ outcome_datetime: event.currentTarget.value })}
           />
           <Select label="Outcome source" data={recordFieldOptions('outcome_source')} value={draft.outcome_source || null} onChange={(value) => update({ outcome_source: value ?? '' })} clearable />
+          <Select
+            label="Final outcome"
+            data={recordFieldOptions('outcome.final_outcome')}
+            value={draft.final_outcome || null}
+            onChange={(value) => update({ final_outcome: value ?? '' })}
+            clearable
+          />
+          <TextInput
+            label="Final outcome date"
+            type="date"
+            value={draft.final_outcome_date}
+            onChange={(event) => update({ final_outcome_date: event.currentTarget.value })}
+          />
         </SimpleGrid>
       ) : null}
 
@@ -446,6 +572,7 @@ function buildReabstractionPayload(draft: QcDraft) {
       ed_date: blankToUndefined(draft.ed_date),
       ed_time: blankToUndefined(draft.ed_time),
       triage_time: blankToUndefined(draft.triage_time),
+      triaged_by: blankToUndefined(draft.triaged_by),
       age: toNumber(draft.age),
       eligible,
       exclusion_code: eligible === false ? blankToUndefined(draft.exclusion_code) : undefined,
@@ -459,6 +586,17 @@ function buildReabstractionPayload(draft: QcDraft) {
       referral: blankToUndefined(draft.referral),
       referring_health_center:
         draft.referral === '1' ? blankToUndefined(draft.referring_health_center) : undefined,
+      referring_health_center_other:
+        draft.referral === '1'
+          ? blankToUndefined(draft.referring_health_center_other)
+          : undefined,
+      referral_date:
+        draft.referral === '1' ? blankToUndefined(draft.referral_date) : undefined,
+      referral_time:
+        draft.referral === '1' ? blankToUndefined(draft.referral_time) : undefined,
+      referred_by:
+        draft.referral === '1' ? blankToUndefined(draft.referred_by) : undefined,
+      lmuth_called: blankToUndefined(draft.lmuth_called),
       comorbidities: compact({
         dm: blankToUndefined(draft.dm),
         htn: blankToUndefined(draft.htn),
@@ -469,7 +607,7 @@ function buildReabstractionPayload(draft: QcDraft) {
         other_text: draft.other_comorb === '1' ? blankToUndefined(draft.other_comorb_text) : undefined,
       }),
       comorb_any: blankToUndefined(draft.comorb_any),
-      preg_test: draft.sex === '2' ? blankToUndefined(draft.preg_test) : undefined,
+      preg_test: draft.sex !== '1' ? blankToUndefined(draft.preg_test) : undefined,
     }),
     sats: compact({
       sats_cat: blankToUndefined(draft.sats_cat),
@@ -477,6 +615,10 @@ function buildReabstractionPayload(draft: QcDraft) {
       discriminator_yes: toBoolean(draft.discriminator_yes),
       discriminator_type:
         draft.discriminator_yes === 'true' ? blankToUndefined(draft.discriminator_type) : undefined,
+      discriminator_detail:
+        draft.discriminator_yes === 'true' && draft.discriminator_type === '18'
+          ? blankToUndefined(draft.discriminator_detail)
+          : undefined,
       documentation_complete: toBoolean(draft.documentation_complete),
     }),
     physiology: compact({
@@ -495,16 +637,28 @@ function buildReabstractionPayload(draft: QcDraft) {
       chief_complaint_verbatim: blankToUndefined(draft.chief_complaint_verbatim),
       complaint_group: blankToUndefined(draft.complaint_group),
       multiple_complaints: toBoolean(draft.multiple_complaints),
+      multiple_complaints_details:
+        draft.multiple_complaints === 'true'
+          ? blankToUndefined(draft.multiple_complaints_details)
+          : undefined,
     }),
     process: compact({
       clinician_time: blankToUndefined(draft.clinician_time),
       treatment_time: blankToUndefined(draft.treatment_time),
+      doctor_review_datetime: blankToUndefined(draft.doctor_review_datetime),
+      doctor_diagnosis: blankToUndefined(draft.doctor_diagnosis),
+      system_diagnosis: blankToUndefined(draft.system_diagnosis),
+      doctor_review_disposition: blankToUndefined(draft.doctor_review_disposition),
     }),
     outcome24: blankToUndefined(draft.outcome24),
     outcome_datetime: draft.outcome_datetime
       ? new Date(draft.outcome_datetime).toISOString()
       : undefined,
     outcome_source: blankToUndefined(draft.outcome_source),
+    final_outcome: blankToUndefined(draft.final_outcome),
+    final_outcome_date: draft.final_outcome_date
+      ? new Date(draft.final_outcome_date).toISOString()
+      : undefined,
   };
 
   return compact(payload) ?? {};

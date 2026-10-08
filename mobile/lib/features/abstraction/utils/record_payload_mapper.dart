@@ -12,6 +12,7 @@ Map<String, dynamic> buildRecordPayloadFromDraft(RaRecordDraft draft) {
       if (draft.edDate != null) 'ed_date': draft.edDate!.toIso8601String(),
       if (draft.edTime?.isNotEmpty == true) 'ed_time': draft.edTime,
       if (draft.triageTime?.isNotEmpty == true) 'triage_time': draft.triageTime,
+      if (draft.triagedBy?.isNotEmpty == true) 'triaged_by': draft.triagedBy,
       if (draft.age != null) 'age': draft.age,
       if (draft.eligible != null) 'eligible': draft.eligible,
       if (draft.exclusionCode?.isNotEmpty == true)
@@ -24,6 +25,16 @@ Map<String, dynamic> buildRecordPayloadFromDraft(RaRecordDraft draft) {
       if (draft.referral?.isNotEmpty == true) 'referral': draft.referral,
       if (draft.referringHealthCenter?.trim().isNotEmpty == true)
         'referring_health_center': draft.referringHealthCenter!.trim(),
+      if (draft.referringHealthCenterOther?.trim().isNotEmpty == true)
+        'referring_health_center_other':
+            draft.referringHealthCenterOther!.trim(),
+      if (draft.referralDate != null)
+        'referral_date': draft.referralDate!.toIso8601String(),
+      if (draft.referralTime?.isNotEmpty == true)
+        'referral_time': draft.referralTime,
+      if (draft.referredBy?.isNotEmpty == true) 'referred_by': draft.referredBy,
+      if (draft.lmuthCalled?.isNotEmpty == true)
+        'lmuth_called': draft.lmuthCalled,
       'comorbidities': {
         if (_encodeBinaryCode(draft.dm) != null)
           'dm': _encodeBinaryCode(draft.dm),
@@ -52,6 +63,8 @@ Map<String, dynamic> buildRecordPayloadFromDraft(RaRecordDraft draft) {
           draft.discriminatorType?.isNotEmpty == true)
         'discriminator_type': draft.discriminatorType,
       if (draft.discriminatorYes == false) 'discriminator_type': '0',
+      if (draft.discriminatorDetail?.trim().isNotEmpty == true)
+        'discriminator_detail': draft.discriminatorDetail!.trim(),
       if (draft.documentationComplete != null)
         'documentation_complete': draft.documentationComplete,
     },
@@ -74,12 +87,24 @@ Map<String, dynamic> buildRecordPayloadFromDraft(RaRecordDraft draft) {
         'complaint_group': draft.complaintGroup,
       if (draft.multipleComplaints != null)
         'multiple_complaints': draft.multipleComplaints,
+      if (draft.multipleComplaintsDetails?.trim().isNotEmpty == true)
+        'multiple_complaints_details':
+            draft.multipleComplaintsDetails!.trim(),
     },
     'process': {
       if (draft.clinicianTime?.isNotEmpty == true)
         'clinician_time': draft.clinicianTime,
       if (draft.treatmentTime?.isNotEmpty == true)
         'treatment_time': draft.treatmentTime,
+      if (draft.doctorReviewDatetime != null)
+        'doctor_review_datetime':
+            draft.doctorReviewDatetime!.toIso8601String(),
+      if (draft.doctorDiagnosis?.trim().isNotEmpty == true)
+        'doctor_diagnosis': draft.doctorDiagnosis!.trim(),
+      if (draft.systemDiagnosis?.isNotEmpty == true)
+        'system_diagnosis': draft.systemDiagnosis,
+      if (draft.doctorReviewDisposition?.trim().isNotEmpty == true)
+        'doctor_review_disposition': draft.doctorReviewDisposition!.trim(),
     },
     'data_quality': {
       'miss_sats': draft.spo2 == null,
@@ -105,8 +130,13 @@ Map<String, dynamic>? buildOutcomePayloadFromBundle(DraftRecordBundle bundle) {
 
   return {
     'outcome24': draft.outcome24,
-    'outcome_datetime': draft.outcomeDatetime!.toIso8601String(),
     'outcome_source': draft.outcomeSource,
+    if (draft.outcomeDatetime != null)
+      'outcome_datetime': draft.outcomeDatetime!.toIso8601String(),
+    if (draft.finalOutcome?.isNotEmpty == true)
+      'final_outcome': draft.finalOutcome,
+    if (draft.finalOutcomeDate != null)
+      'final_outcome_date': draft.finalOutcomeDate!.toIso8601String(),
   };
 }
 

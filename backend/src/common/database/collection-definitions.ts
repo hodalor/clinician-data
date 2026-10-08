@@ -5,7 +5,9 @@ import {
   DISCRIMINATOR_TYPE_CODES,
   EXCLUSION_CODES,
   MOBILITY_CODES,
+  LMUTH_CALLED_CODES,
   OUTCOME24_CODES,
+  FINAL_OUTCOME_CODES,
   OUTCOME_SOURCE_CODES,
   PREG_TEST_CODES,
   RDT_CODES,
@@ -15,8 +17,10 @@ import {
   SATS_CATEGORY_CODES,
   SEX_CODES,
   TRAUMA_CODES,
+  REFERRED_BY_CODES,
   USER_ROLES,
   USER_STATUSES,
+  TRIAGED_BY_CODES,
 } from './schema.constants.js';
 
 type CollectionIndex = {
@@ -276,6 +280,7 @@ export const collectionDefinitions: CollectionDefinition[] = [
               ed_date: { bsonType: 'date' },
               ed_time: { bsonType: 'string' },
               triage_time: { bsonType: 'string' },
+              triaged_by: { enum: [...TRIAGED_BY_CODES] },
               age: numberValue,
               eligible: { bsonType: 'bool' },
               exclusion_code: { enum: [...EXCLUSION_CODES] },
@@ -288,6 +293,11 @@ export const collectionDefinitions: CollectionDefinition[] = [
               sex: { enum: [...SEX_CODES] },
               referral: { enum: [...REFERRAL_CODES] },
               referring_health_center: { bsonType: 'string' },
+              referring_health_center_other: { bsonType: 'string' },
+              referral_date: { bsonType: 'date' },
+              referral_time: { bsonType: 'string' },
+              referred_by: { enum: [...REFERRED_BY_CODES] },
+              lmuth_called: { enum: [...LMUTH_CALLED_CODES] },
               comorbidities: {
                 bsonType: 'object',
                 properties: {
@@ -311,6 +321,7 @@ export const collectionDefinitions: CollectionDefinition[] = [
               tews_total: numberValue,
               discriminator_yes: { bsonType: 'bool' },
               discriminator_type: { enum: [...DISCRIMINATOR_TYPE_CODES] },
+              discriminator_detail: { bsonType: 'string' },
               documentation_complete: { bsonType: 'bool' },
             },
           },
@@ -336,6 +347,7 @@ export const collectionDefinitions: CollectionDefinition[] = [
               chief_complaint_verbatim: { bsonType: 'string' },
               complaint_group: { enum: [...COMPLAINT_GROUP_CODES] },
               multiple_complaints: { bsonType: 'bool' },
+              multiple_complaints_details: { bsonType: 'string' },
             },
           },
           initial_destination: { bsonType: 'string' },
@@ -344,6 +356,10 @@ export const collectionDefinitions: CollectionDefinition[] = [
             properties: {
               clinician_time: { bsonType: 'string' },
               treatment_time: { bsonType: 'string' },
+              doctor_review_datetime: { bsonType: 'date' },
+              doctor_diagnosis: { bsonType: 'string' },
+              system_diagnosis: { enum: [...COMPLAINT_GROUP_CODES] },
+              doctor_review_disposition: { bsonType: 'string' },
             },
           },
           data_quality: {
@@ -407,6 +423,8 @@ export const collectionDefinitions: CollectionDefinition[] = [
           outcome24: { enum: [...OUTCOME24_CODES] },
           outcome_datetime: { bsonType: 'date' },
           outcome_source: { enum: [...OUTCOME_SOURCE_CODES] },
+          final_outcome: { enum: [...FINAL_OUTCOME_CODES] },
+          final_outcome_date: { bsonType: 'date' },
           verified: { bsonType: 'bool' },
           verified_by: { bsonType: 'objectId' },
           verified_at: nullableDate,

@@ -63,6 +63,7 @@ class EligibilityEntries extends Table {
   DateTimeColumn get edDate => dateTime().named('ed_date').nullable()();
   TextColumn get edTime => text().named('ed_time').nullable()();
   TextColumn get triageTime => text().named('triage_time').nullable()();
+  TextColumn get triagedBy => text().named('triaged_by').nullable()();
   IntColumn get age => integer().nullable()();
   BoolColumn get eligible => boolean().nullable()();
   TextColumn get exclusionCode => text().named('exclusion_code').nullable()();
@@ -74,6 +75,7 @@ class EligibilityEntries extends Table {
 
   @override
   List<String> get customConstraints => [
+        "CHECK (triaged_by IS NULL OR triaged_by IN ('paramedic', 'nurse', 'doctor'))",
         "CHECK (exclusion_code IS NULL OR exclusion_code IN ('1', '2', '3', '4', '5', '9'))",
       ];
 }
@@ -86,6 +88,12 @@ class PatientEntries extends Table {
   TextColumn get referral => text().nullable()();
   TextColumn get referringHealthCenter =>
       text().named('referring_health_center').nullable()();
+  TextColumn get referringHealthCenterOther =>
+      text().named('referring_health_center_other').nullable()();
+  DateTimeColumn get referralDate => dateTime().named('referral_date').nullable()();
+  TextColumn get referralTime => text().named('referral_time').nullable()();
+  TextColumn get referredBy => text().named('referred_by').nullable()();
+  TextColumn get lmuthCalled => text().named('lmuth_called').nullable()();
   TextColumn get dm => text().nullable()();
   TextColumn get htn => text().nullable()();
   TextColumn get asthma => text().nullable()();
@@ -104,6 +112,8 @@ class PatientEntries extends Table {
   List<String> get customConstraints => [
         "CHECK (sex IS NULL OR sex IN ('1', '2', '9'))",
         "CHECK (referral IS NULL OR referral IN ('0', '1', '9'))",
+        "CHECK (referred_by IS NULL OR referred_by IN ('nurse', 'clinical_officer', 'doctor', 'not_indicated'))",
+        "CHECK (lmuth_called IS NULL OR lmuth_called IN ('1', '0', '9'))",
         "CHECK (dm IS NULL OR dm IN ('0', '1', '9'))",
         "CHECK (htn IS NULL OR htn IN ('0', '1', '9'))",
         "CHECK (asthma IS NULL OR asthma IN ('0', '1', '9'))",
@@ -125,6 +135,8 @@ class SatsEntries extends Table {
       boolean().named('discriminator_yes').nullable()();
   TextColumn get discriminatorType =>
       text().named('discriminator_type').nullable()();
+  TextColumn get discriminatorDetail =>
+      text().named('discriminator_detail').nullable()();
   BoolColumn get documentationComplete =>
       boolean().named('documentation_complete').nullable()();
 
@@ -175,6 +187,8 @@ class PresentationEntries extends Table {
   TextColumn get complaintGroup => text().named('complaint_group').nullable()();
   BoolColumn get multipleComplaints =>
       boolean().named('multiple_complaints').nullable()();
+  TextColumn get multipleComplaintsDetails =>
+      text().named('multiple_complaints_details').nullable()();
 
   @override
   Set<Column<Object>>? get primaryKey => {recordId};
@@ -191,9 +205,22 @@ class ProcessEntries extends Table {
   TextColumn get studyId => text().named('study_id')();
   TextColumn get clinicianTime => text().named('clinician_time').nullable()();
   TextColumn get treatmentTime => text().named('treatment_time').nullable()();
+  DateTimeColumn get doctorReviewDatetime =>
+      dateTime().named('doctor_review_datetime').nullable()();
+  TextColumn get doctorDiagnosis =>
+      text().named('doctor_diagnosis').nullable()();
+  TextColumn get systemDiagnosis =>
+      text().named('system_diagnosis').nullable()();
+  TextColumn get doctorReviewDisposition =>
+      text().named('doctor_review_disposition').nullable()();
 
   @override
   Set<Column<Object>>? get primaryKey => {recordId};
+
+  @override
+  List<String> get customConstraints => [
+        "CHECK (system_diagnosis IS NULL OR system_diagnosis IN ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'))",
+      ];
 }
 
 class DataQualityEntries extends Table {
@@ -222,6 +249,9 @@ class OutcomeEntries extends Table {
   DateTimeColumn get outcomeDatetime =>
       dateTime().named('outcome_datetime').nullable()();
   TextColumn get outcomeSource => text().named('outcome_source').nullable()();
+  TextColumn get finalOutcome => text().named('final_outcome').nullable()();
+  DateTimeColumn get finalOutcomeDate =>
+      dateTime().named('final_outcome_date').nullable()();
   BoolColumn get verified =>
       boolean().named('verified').withDefault(const Constant(false))();
   TextColumn get verifiedBy => text().named('verified_by').nullable()();
@@ -234,6 +264,7 @@ class OutcomeEntries extends Table {
   List<String> get customConstraints => [
         "CHECK (outcome24 IS NULL OR outcome24 IN ('1', '2', '3', '4'))",
         "CHECK (outcome_source IS NULL OR outcome_source IN ('1', '2', '3', '4', '5', '6'))",
+        "CHECK (final_outcome IS NULL OR final_outcome IN ('1', '2'))",
       ];
 }
 
@@ -259,7 +290,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -296,6 +327,64 @@ class AppDatabase extends _$AppDatabase {
             await migrator.addColumn(
               patientEntries,
               patientEntries.referringHealthCenter,
+            );
+          }
+          if (from < 5) {
+            await migrator.addColumn(
+              eligibilityEntries,
+              eligibilityEntries.triagedBy,
+            );
+            await migrator.addColumn(
+              patientEntries,
+              patientEntries.referringHealthCenterOther,
+            );
+            await migrator.addColumn(
+              patientEntries,
+              patientEntries.referralDate,
+            );
+            await migrator.addColumn(
+              patientEntries,
+              patientEntries.referralTime,
+            );
+            await migrator.addColumn(
+              patientEntries,
+              patientEntries.referredBy,
+            );
+            await migrator.addColumn(
+              patientEntries,
+              patientEntries.lmuthCalled,
+            );
+            await migrator.addColumn(
+              satsEntries,
+              satsEntries.discriminatorDetail,
+            );
+            await migrator.addColumn(
+              presentationEntries,
+              presentationEntries.multipleComplaintsDetails,
+            );
+            await migrator.addColumn(
+              processEntries,
+              processEntries.doctorReviewDatetime,
+            );
+            await migrator.addColumn(
+              processEntries,
+              processEntries.doctorDiagnosis,
+            );
+            await migrator.addColumn(
+              processEntries,
+              processEntries.systemDiagnosis,
+            );
+            await migrator.addColumn(
+              processEntries,
+              processEntries.doctorReviewDisposition,
+            );
+            await migrator.addColumn(
+              outcomeEntries,
+              outcomeEntries.finalOutcome,
+            );
+            await migrator.addColumn(
+              outcomeEntries,
+              outcomeEntries.finalOutcomeDate,
             );
           }
         },

@@ -45,6 +45,8 @@ type OutcomeRecord = {
   outcome24?: string;
   outcome_datetime?: Date;
   outcome_source?: string;
+  final_outcome?: string;
+  final_outcome_date?: Date;
   verified?: boolean;
   verified_by?: Types.ObjectId | null;
   verified_at?: Date | null;
@@ -209,6 +211,8 @@ export class RecordsService {
               outcome24: outcome.outcome24 ?? null,
               outcome_datetime: outcome.outcome_datetime ?? null,
               outcome_source: outcome.outcome_source ?? null,
+              final_outcome: outcome.final_outcome ?? null,
+              final_outcome_date: outcome.final_outcome_date ?? null,
               verified: outcome.verified ?? false,
               verified_by: outcome.verified_by?.toString() ?? null,
               verified_at: outcome.verified_at ?? null,
@@ -286,7 +290,6 @@ export class RecordsService {
       .lean();
     const hasCompleteOutcome = Boolean(
       outcome?.outcome24 &&
-      outcome?.outcome_datetime &&
       outcome?.outcome_source,
     );
 
@@ -319,24 +322,36 @@ export class RecordsService {
       payload.outcome_source,
       'outcome_source',
     );
-    const outcomeDatetime = this.readDate(
-      payload.outcome_datetime,
-      'outcome_datetime',
-    );
+    const outcomeDatetime = payload.outcome_datetime
+      ? this.readDate(payload.outcome_datetime, 'outcome_datetime')
+      : undefined;
+    const finalOutcome = this.isNonEmptyString(payload.final_outcome)
+      ? String(payload.final_outcome).trim()
+      : undefined;
+    const finalOutcomeDate = payload.final_outcome_date
+      ? this.readDate(payload.final_outcome_date, 'final_outcome_date')
+      : undefined;
 
     await this.outcomeModel.updateOne(
       { research_record_id: record._id },
       {
         $set: {
           outcome24,
-          outcome_datetime: outcomeDatetime,
           outcome_source: outcomeSource,
           verified: false,
-          verified_by: null,
-          verified_at: null,
+          ...(outcomeDatetime ? { outcome_datetime: outcomeDatetime } : {}),
+          ...(finalOutcome ? { final_outcome: finalOutcome } : {}),
+          ...(finalOutcomeDate ? { final_outcome_date: finalOutcomeDate } : {}),
         },
         $setOnInsert: {
           research_record_id: record._id,
+        },
+        $unset: {
+          ...(outcomeDatetime ? {} : { outcome_datetime: '' }),
+          ...(finalOutcome ? {} : { final_outcome: '' }),
+          ...(finalOutcomeDate ? {} : { final_outcome_date: '' }),
+          verified_by: '',
+          verified_at: '',
         },
       },
       { upsert: true },
@@ -359,8 +374,10 @@ export class RecordsService {
       record: record.toObject(),
       outcome: {
         outcome24,
-        outcome_datetime: outcomeDatetime,
         outcome_source: outcomeSource,
+        outcome_datetime: outcomeDatetime ?? null,
+        final_outcome: finalOutcome ?? null,
+        final_outcome_date: finalOutcomeDate ?? null,
       },
     };
   }
@@ -738,6 +755,8 @@ export class RecordsService {
 
     this.normalizeDateField(normalized, 'abstract_date', errors);
     this.normalizeDateField(normalized, 'eligibility.ed_date', errors);
+    this.normalizeDateField(normalized, 'patient.referral_date', errors);
+    this.normalizeDateField(normalized, 'process.doctor_review_datetime', errors);
 
     if (isCreate) {
       if (!this.isNonEmptyString(normalized.study_id)) {
@@ -752,8 +771,11 @@ export class RecordsService {
     this.validateEnumField(normalized, 'status', errors);
     this.validateEnumField(normalized, 'mode', errors);
     this.validateEnumField(normalized, 'eligibility.exclusion_code', errors);
+    this.validateEnumField(normalized, 'eligibility.triaged_by', errors);
     this.validateEnumField(normalized, 'patient.sex', errors);
     this.validateEnumField(normalized, 'patient.referral', errors);
+    this.validateEnumField(normalized, 'patient.referred_by', errors);
+    this.validateEnumField(normalized, 'patient.lmuth_called', errors);
     this.validateEnumField(normalized, 'patient.comorbidities.dm', errors);
     this.validateEnumField(normalized, 'patient.comorbidities.htn', errors);
     this.validateEnumField(normalized, 'patient.comorbidities.asthma', errors);
@@ -773,6 +795,7 @@ export class RecordsService {
     this.validateEnumField(normalized, 'physiology.avpu', errors);
     this.validateEnumField(normalized, 'physiology.trauma', errors);
     this.validateEnumField(normalized, 'presentation.complaint_group', errors);
+    this.validateEnumField(normalized, 'process.system_diagnosis', errors);
 
     const discriminatorYes = this.getValueAtPath(
       normalized,

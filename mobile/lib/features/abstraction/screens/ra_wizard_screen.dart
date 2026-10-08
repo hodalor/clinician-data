@@ -51,8 +51,13 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
   final _studyIdController = TextEditingController();
   final _exclusionReasonController = TextEditingController();
   final _referringHealthCenterController = TextEditingController();
+  final _referringHealthCenterOtherController = TextEditingController();
   final _otherComorbTextController = TextEditingController();
   final _chiefComplaintController = TextEditingController();
+  final _discriminatorDetailController = TextEditingController();
+  final _multipleComplaintsDetailsController = TextEditingController();
+  final _doctorDiagnosisController = TextEditingController();
+  final _doctorReviewDispositionController = TextEditingController();
   final _manualDestinationController = TextEditingController();
 
   RaRecordDraft _draft = const RaRecordDraft();
@@ -73,8 +78,13 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
     _studyIdController.dispose();
     _exclusionReasonController.dispose();
     _referringHealthCenterController.dispose();
+    _referringHealthCenterOtherController.dispose();
     _otherComorbTextController.dispose();
     _chiefComplaintController.dispose();
+    _discriminatorDetailController.dispose();
+    _multipleComplaintsDetailsController.dispose();
+    _doctorDiagnosisController.dispose();
+    _doctorReviewDispositionController.dispose();
     _manualDestinationController.dispose();
     super.dispose();
   }
@@ -253,7 +263,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
       case WizardStep.eligibility:
         return _buildEligibilityStep(context);
       case WizardStep.patient:
-        return _buildPatientStep();
+        return _buildPatientStep(context);
       case WizardStep.sats:
         return _buildSatsStep();
       case WizardStep.physiology:
@@ -319,6 +329,21 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
             value: _draft.triageTime,
             onChanged: (value) =>
                 _updateDraft(_draft.copyWith(triageTime: value)),
+          ),
+        ),
+        _QuestionCard(
+          title: 'Triaged by',
+          variableName: 'eligibility.triaged_by',
+          child: _LargeDropdownField<String>(
+            value: _draft.triagedBy,
+            hintText: 'Choose who triaged the patient',
+            items: const [
+              DropdownMenuItem(value: 'paramedic', child: Text('Paramedic')),
+              DropdownMenuItem(value: 'nurse', child: Text('Nurse')),
+              DropdownMenuItem(value: 'doctor', child: Text('Doctor')),
+            ],
+            onChanged: (value) =>
+                _updateDraft(_draft.copyWith(triagedBy: value)),
           ),
         ),
         _QuestionCard(
@@ -389,7 +414,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
     );
   }
 
-  Widget _buildPatientStep() {
+  Widget _buildPatientStep(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -426,12 +451,18 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
             onChanged: (value) {
               if (value != '1') {
                 _referringHealthCenterController.clear();
+                _referringHealthCenterOtherController.clear();
               }
               _updateDraft(
                 _draft.copyWith(
                   referral: value,
                   referringHealthCenter:
                       value == '1' ? _draft.referringHealthCenter : null,
+                  referringHealthCenterOther:
+                      value == '1' ? _draft.referringHealthCenterOther : null,
+                  referralDate: value == '1' ? _draft.referralDate : null,
+                  referralTime: value == '1' ? _draft.referralTime : null,
+                  referredBy: value == '1' ? _draft.referredBy : null,
                 ),
               );
             },
@@ -449,6 +480,87 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
               ),
             ),
           ),
+        if (_draft.referral == '1')
+          _QuestionCard(
+            title: 'Other health center detail',
+            variableName: 'patient.referring_health_center_other',
+            child: _LargeTextFormField(
+              controller: _referringHealthCenterOtherController,
+              hintText: 'Add any extra health center detail if needed',
+              onChanged: (value) => _updateDraft(
+                _draft.copyWith(referringHealthCenterOther: value),
+              ),
+            ),
+          ),
+        if (_draft.referral == '1')
+          _QuestionCard(
+            title: 'Referral date',
+            variableName: 'patient.referral_date',
+            child: _PickerButton(
+              label: _draft.referralDate == null
+                  ? 'Choose referral date'
+                  : DateFormat('dd MMM yyyy').format(_draft.referralDate!),
+              onPressed: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: _draft.referralDate ?? DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  _updateDraft(_draft.copyWith(referralDate: picked));
+                }
+              },
+            ),
+          ),
+        if (_draft.referral == '1')
+          _QuestionCard(
+            title: 'Referral time',
+            variableName: 'patient.referral_time',
+            child: _TimePickerField(
+              value: _draft.referralTime,
+              onChanged: (value) =>
+                  _updateDraft(_draft.copyWith(referralTime: value)),
+            ),
+          ),
+        if (_draft.referral == '1')
+          _QuestionCard(
+            title: 'Referred by',
+            variableName: 'patient.referred_by',
+            child: _LargeDropdownField<String>(
+              value: _draft.referredBy,
+              hintText: 'Choose who referred the patient',
+              items: const [
+                DropdownMenuItem(value: 'nurse', child: Text('Nurse')),
+                DropdownMenuItem(
+                  value: 'clinical_officer',
+                  child: Text('Clinical officer'),
+                ),
+                DropdownMenuItem(value: 'doctor', child: Text('Doctor')),
+                DropdownMenuItem(
+                  value: 'not_indicated',
+                  child: Text('Not indicated'),
+                ),
+              ],
+              onChanged: (value) =>
+                  _updateDraft(_draft.copyWith(referredBy: value)),
+            ),
+          ),
+        _QuestionCard(
+          title: 'Was LMUTH called?',
+          variableName: 'patient.lmuth_called',
+          child: _LargeDropdownField<String>(
+            value: _draft.lmuthCalled,
+            hintText: 'Choose whether LMUTH was called',
+            items: const [
+              DropdownMenuItem(value: '1', child: Text('1 Yes')),
+              DropdownMenuItem(value: '0', child: Text('0 No')),
+              DropdownMenuItem(value: '9', child: Text('9 Not recorded')),
+            ],
+            onChanged: (value) =>
+                _updateDraft(_draft.copyWith(lmuthCalled: value)),
+          ),
+        ),
         _buildBooleanClinicalCard(
           title: 'Diabetes mellitus',
           variableName: 'patient.comorbidities.dm',
@@ -575,6 +687,8 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                 discriminatorYes: value,
                 discriminatorType:
                     value == true ? _draft.discriminatorType : '0',
+                discriminatorDetail:
+                    value == true ? _draft.discriminatorDetail : null,
               ),
             ),
           ),
@@ -596,6 +710,17 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                   .toList(growable: false),
               onChanged: (value) =>
                   _updateDraft(_draft.copyWith(discriminatorType: value)),
+            ),
+          ),
+        if (_draft.discriminatorYes == true && _draft.discriminatorType == '18')
+          _QuestionCard(
+            title: 'Other documented discriminator',
+            variableName: 'sats.discriminator_detail',
+            child: _LargeTextFormField(
+              controller: _discriminatorDetailController,
+              hintText: 'Describe the documented discriminator',
+              onChanged: (value) =>
+                  _updateDraft(_draft.copyWith(discriminatorDetail: value)),
             ),
           ),
         _QuestionCard(
@@ -761,7 +886,16 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                   value: '8', child: Text('Endocrine / metabolic')),
               DropdownMenuItem(
                   value: '9', child: Text('Poisoning / toxicological')),
-              DropdownMenuItem(value: '10', child: Text('Other')),
+              DropdownMenuItem(value: '10', child: Text('Renal / urologic')),
+              DropdownMenuItem(
+                  value: '11', child: Text('Mental health / behavioural')),
+              DropdownMenuItem(value: '12', child: Text('ENT / eye / dental')),
+              DropdownMenuItem(
+                  value: '13', child: Text('Dermatology / allergic')),
+              DropdownMenuItem(
+                  value: '14',
+                  child: Text('Bites / stings / envenomation')),
+              DropdownMenuItem(value: '15', child: Text('Other')),
             ],
             onChanged: (value) =>
                 _updateDraft(_draft.copyWith(complaintGroup: value)),
@@ -776,6 +910,19 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                 _updateDraft(_draft.copyWith(multipleComplaints: value)),
           ),
         ),
+        if (_draft.multipleComplaints == true)
+          _QuestionCard(
+            title: 'Additional complaints detail',
+            variableName: 'presentation.multiple_complaints_details',
+            child: _LargeTextFormField(
+              controller: _multipleComplaintsDetailsController,
+              hintText: 'Describe the additional complaints',
+              maxLines: 3,
+              onChanged: (value) => _updateDraft(
+                _draft.copyWith(multipleComplaintsDetails: value),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -846,6 +993,55 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                 _updateDraft(_draft.copyWith(treatmentTime: value)),
           ),
         ),
+        _QuestionCard(
+          title: 'Doctor review date and time',
+          variableName: 'process.doctor_review_datetime',
+          child: _DateTimePickerField(
+            value: _draft.doctorReviewDatetime,
+            onChanged: (value) =>
+                _updateDraft(_draft.copyWith(doctorReviewDatetime: value)),
+          ),
+        ),
+        _QuestionCard(
+          title: 'Doctor diagnosis',
+          variableName: 'process.doctor_diagnosis',
+          child: _LargeTextFormField(
+            controller: _doctorDiagnosisController,
+            hintText: 'Enter the doctor diagnosis',
+            maxLines: 3,
+            onChanged: (value) =>
+                _updateDraft(_draft.copyWith(doctorDiagnosis: value)),
+          ),
+        ),
+        _QuestionCard(
+          title: 'System diagnosis',
+          variableName: 'process.system_diagnosis',
+          child: _LargeDropdownField<String>(
+            value: _draft.systemDiagnosis,
+            hintText: 'Choose the matching system diagnosis group',
+            items: complaintGroupCodes
+                .map(
+                  (code) => DropdownMenuItem<String>(
+                    value: code,
+                    child: Text(decodeLabel(complaintGroupLabels, code)),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (value) =>
+                _updateDraft(_draft.copyWith(systemDiagnosis: value)),
+          ),
+        ),
+        _QuestionCard(
+          title: 'Doctor review disposition',
+          variableName: 'process.doctor_review_disposition',
+          child: _LargeTextFormField(
+            controller: _doctorReviewDispositionController,
+            hintText: 'Enter the doctor review disposition',
+            onChanged: (value) => _updateDraft(
+              _draft.copyWith(doctorReviewDisposition: value),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -875,6 +1071,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
         _QuestionCard(
           title: 'Outcome date and time',
           variableName: 'outcome_datetime',
+          helperText: 'Optional. Leave blank if the source only documents the outcome without a time.',
           child: _DateTimePickerField(
             value: _draft.outcomeDatetime,
             onChanged: (value) =>
@@ -899,6 +1096,40 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                 _updateDraft(_draft.copyWith(outcomeSource: value)),
           ),
         ),
+        _QuestionCard(
+          title: 'Final outcome',
+          variableName: 'outcome.final_outcome',
+          child: _LargeDropdownField<String>(
+            value: _draft.finalOutcome,
+            hintText: 'Choose final outcome',
+            items: const [
+              DropdownMenuItem(value: '1', child: Text('1 Alive')),
+              DropdownMenuItem(value: '2', child: Text('2 Dead')),
+            ],
+            onChanged: (value) =>
+                _updateDraft(_draft.copyWith(finalOutcome: value)),
+          ),
+        ),
+        _QuestionCard(
+          title: 'Final outcome date',
+          variableName: 'outcome.final_outcome_date',
+          child: _PickerButton(
+            label: _draft.finalOutcomeDate == null
+                ? 'Choose final outcome date'
+                : DateFormat('dd MMM yyyy').format(_draft.finalOutcomeDate!),
+            onPressed: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _draft.finalOutcomeDate ?? DateTime.now(),
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) {
+                _updateDraft(_draft.copyWith(finalOutcomeDate: picked));
+              }
+            },
+          ),
+        ),
       ],
     );
   }
@@ -921,20 +1152,20 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
         _ReviewCard(
           title: 'Eligibility',
           summary:
-              'Study ID: ${_draft.studyId.isEmpty ? 'Not entered' : _draft.studyId}',
+              'Study ID: ${_draft.studyId.isEmpty ? 'Not entered' : _draft.studyId} | Triaged by: ${decodeLabel(triagedByLabels, _draft.triagedBy)}',
           onEdit: () => _jumpToStep(WizardStep.eligibility),
         ),
         if (!_draft.skipsClinicalSections) ...[
           _ReviewCard(
             title: 'Patient characteristics',
             summary:
-                'Sex: ${decodeLabel(sexLabels, _draft.sex)} | Referral: ${decodeLabel(referralLabels, _draft.referral)}${(_draft.referringHealthCenter ?? '').trim().isNotEmpty ? ' | Health center: ${_draft.referringHealthCenter!.trim()}' : ''}',
+                'Sex: ${decodeLabel(sexLabels, _draft.sex)} | Referral: ${decodeLabel(referralLabels, _draft.referral)}${(_draft.referringHealthCenter ?? '').trim().isNotEmpty ? ' | Health center: ${_draft.referringHealthCenter!.trim()}' : ''} | LMUTH called: ${decodeLabel(lmuthCalledLabels, _draft.lmuthCalled)}',
             onEdit: () => _jumpToStep(WizardStep.patient),
           ),
           _ReviewCard(
             title: 'SATS / TEWS',
             summary:
-                'SATS: ${decodeLabel(satsCategoryLabels, _draft.satsCat)} | TEWS: ${_labelOrBlank(_draft.tewsTotal?.toString())}',
+                'SATS: ${decodeLabel(satsCategoryLabels, _draft.satsCat)} | TEWS: ${_labelOrBlank(_draft.tewsTotal?.toString())}${(_draft.discriminatorDetail ?? '').trim().isNotEmpty ? ' | Detail: ${_draft.discriminatorDetail!.trim()}' : ''}',
             onEdit: () => _jumpToStep(WizardStep.sats),
           ),
           _ReviewCard(
@@ -946,7 +1177,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           _ReviewCard(
             title: 'Clinical presentation',
             summary: _draft.chiefComplaintVerbatim?.trim().isNotEmpty == true
-                ? '${_draft.chiefComplaintVerbatim!} | ${decodeLabel(complaintGroupLabels, _draft.complaintGroup)}'
+                ? '${_draft.chiefComplaintVerbatim!} | ${decodeLabel(complaintGroupLabels, _draft.complaintGroup)}${(_draft.multipleComplaintsDetails ?? '').trim().isNotEmpty ? ' | Extra: ${_draft.multipleComplaintsDetails!.trim()}' : ''}'
                 : decodeLabel(complaintGroupLabels, _draft.complaintGroup),
             onEdit: () => _jumpToStep(WizardStep.presentation),
           ),
@@ -958,13 +1189,13 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
           _ReviewCard(
             title: 'Process',
             summary:
-                'LMUTH called: ${_labelOrBlank(_draft.clinicianTime)} | Treatment started: ${_labelOrBlank(_draft.treatmentTime)}',
+                'LMUTH called: ${_labelOrBlank(_draft.clinicianTime)} | Treatment started: ${_labelOrBlank(_draft.treatmentTime)}${(_draft.doctorDiagnosis ?? '').trim().isNotEmpty ? ' | Diagnosis: ${_draft.doctorDiagnosis!.trim()}' : ''}',
             onEdit: () => _jumpToStep(WizardStep.process),
           ),
           _ReviewCard(
             title: '24-hour outcome',
             summary:
-                '${decodeLabel(outcome24Labels, _draft.outcome24)} | ${decodeLabel(outcomeSourceLabels, _draft.outcomeSource)}',
+                '${decodeLabel(outcome24Labels, _draft.outcome24)} | ${decodeLabel(outcomeSourceLabels, _draft.outcomeSource)} | Final: ${decodeLabel(finalOutcomeLabels, _draft.finalOutcome)}',
             onEdit: () => _jumpToStep(WizardStep.outcome),
           ),
         ],
@@ -1159,6 +1390,7 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
             edDate: drift.Value(_draft.edDate),
             edTime: drift.Value(_draft.edTime),
             triageTime: drift.Value(_draft.triageTime),
+            triagedBy: drift.Value(_draft.triagedBy),
             age: drift.Value(_draft.age),
             eligible: drift.Value(_draft.eligible),
             exclusionCode: drift.Value(_draft.exclusionCode),
@@ -1173,6 +1405,12 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                   referral: drift.Value(_draft.referral),
                   referringHealthCenter:
                       drift.Value(_draft.referringHealthCenter?.trim()),
+                  referringHealthCenterOther:
+                      drift.Value(_draft.referringHealthCenterOther?.trim()),
+                  referralDate: drift.Value(_draft.referralDate),
+                  referralTime: drift.Value(_draft.referralTime),
+                  referredBy: drift.Value(_draft.referredBy),
+                  lmuthCalled: drift.Value(_draft.lmuthCalled),
                   dm: drift.Value(_encodeBinary(_draft.dm)),
                   htn: drift.Value(_encodeBinary(_draft.htn)),
                   asthma: drift.Value(_encodeBinary(_draft.asthma)),
@@ -1193,6 +1431,8 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                   tewsTotal: drift.Value(_draft.tewsTotal),
                   discriminatorYes: drift.Value(_draft.discriminatorYes),
                   discriminatorType: drift.Value(_draft.discriminatorType),
+                  discriminatorDetail:
+                      drift.Value(_draft.discriminatorDetail?.trim()),
                   documentationComplete:
                       drift.Value(_draft.documentationComplete),
                 ),
@@ -1222,6 +1462,8 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                       drift.Value(_draft.chiefComplaintVerbatim?.trim()),
                   complaintGroup: drift.Value(_draft.complaintGroup),
                   multipleComplaints: drift.Value(_draft.multipleComplaints),
+                  multipleComplaintsDetails:
+                      drift.Value(_draft.multipleComplaintsDetails?.trim()),
                 ),
           process: _draft.skipsClinicalSections
               ? null
@@ -1230,6 +1472,12 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                   studyId: drift.Value(studyId),
                   clinicianTime: drift.Value(_draft.clinicianTime),
                   treatmentTime: drift.Value(_draft.treatmentTime),
+                  doctorReviewDatetime:
+                      drift.Value(_draft.doctorReviewDatetime),
+                  doctorDiagnosis: drift.Value(_draft.doctorDiagnosis?.trim()),
+                  systemDiagnosis: drift.Value(_draft.systemDiagnosis),
+                  doctorReviewDisposition:
+                      drift.Value(_draft.doctorReviewDisposition?.trim()),
                 ),
           dataQuality: _draft.skipsClinicalSections
               ? null
@@ -1251,6 +1499,8 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
                   outcome24: drift.Value(_draft.outcome24),
                   outcomeDatetime: drift.Value(_draft.outcomeDatetime),
                   outcomeSource: drift.Value(_draft.outcomeSource),
+                  finalOutcome: drift.Value(_draft.finalOutcome),
+                  finalOutcomeDate: drift.Value(_draft.finalOutcomeDate),
                   verified: const drift.Value(false),
                   verifiedBy: const drift.Value(null),
                   verifiedAt: const drift.Value(null),
@@ -1346,8 +1596,16 @@ class _RaWizardScreenState extends ConsumerState<RaWizardScreen> {
     _studyIdController.text = draft.studyId;
     _exclusionReasonController.text = draft.exclusionReason ?? '';
     _referringHealthCenterController.text = draft.referringHealthCenter ?? '';
+    _referringHealthCenterOtherController.text =
+        draft.referringHealthCenterOther ?? '';
     _otherComorbTextController.text = draft.otherComorbText ?? '';
     _chiefComplaintController.text = draft.chiefComplaintVerbatim ?? '';
+    _discriminatorDetailController.text = draft.discriminatorDetail ?? '';
+    _multipleComplaintsDetailsController.text =
+        draft.multipleComplaintsDetails ?? '';
+    _doctorDiagnosisController.text = draft.doctorDiagnosis ?? '';
+    _doctorReviewDispositionController.text =
+        draft.doctorReviewDisposition ?? '';
     _manualDestinationController.text = draft.initialDestination ?? '';
     _draft = draft;
   }

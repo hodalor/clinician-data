@@ -57,6 +57,9 @@ StepValidationResult _validateEligibility(RaRecordDraft draft) {
   if (draft.studyId.trim().isEmpty) {
     errors.add('Study ID is required.');
   }
+  if ((draft.triagedBy ?? '').trim().isEmpty) {
+    errors.add('Choose who triaged the patient.');
+  }
 
   if (draft.age != null && draft.age! < 0) {
     errors.add('Age cannot be negative.');
@@ -81,6 +84,18 @@ StepValidationResult _validatePatient(RaRecordDraft draft) {
       (draft.referringHealthCenter ?? '').trim().isEmpty) {
     errors.add('Enter the health center the patient is coming from.');
   }
+  if (draft.referral == '1' && draft.referralDate == null) {
+    errors.add('Choose the referral date.');
+  }
+  if (draft.referral == '1' && (draft.referralTime ?? '').trim().isEmpty) {
+    errors.add('Choose the referral time.');
+  }
+  if (draft.referral == '1' && (draft.referredBy ?? '').trim().isEmpty) {
+    errors.add('Choose who referred the patient.');
+  }
+  if ((draft.lmuthCalled ?? '').trim().isEmpty) {
+    errors.add('Choose whether LMUTH was called.');
+  }
   if (draft.otherComorb == true &&
       (draft.otherComorbText ?? '').trim().isEmpty) {
     errors.add('Describe the other comorbidity.');
@@ -97,6 +112,10 @@ StepValidationResult _validateSats(RaRecordDraft draft) {
   if (draft.discriminatorYes == true &&
       (draft.discriminatorType ?? '').trim().isEmpty) {
     errors.add('Choose the discriminator type.');
+  }
+  if (draft.discriminatorType == '18' &&
+      (draft.discriminatorDetail ?? '').trim().isEmpty) {
+    errors.add('Describe the other documented discriminator.');
   }
   if (draft.discriminatorYes != true &&
       (draft.discriminatorType ?? '').trim().isNotEmpty &&
@@ -182,7 +201,14 @@ StepValidationResult _validatePhysiology(RaRecordDraft draft) {
 }
 
 StepValidationResult _validatePresentation(RaRecordDraft draft) {
-  return const StepValidationResult();
+  final errors = <String>[];
+
+  if (draft.multipleComplaints == true &&
+      (draft.multipleComplaintsDetails ?? '').trim().isEmpty) {
+    errors.add('Describe the additional complaints.');
+  }
+
+  return StepValidationResult(hardErrors: errors);
 }
 
 StepValidationResult _validateDestination(RaRecordDraft draft) {
@@ -199,16 +225,18 @@ StepValidationResult _validateOutcome(RaRecordDraft draft) {
 
   final hasAnyOutcomeField = draft.outcome24 != null ||
       draft.outcomeDatetime != null ||
-      draft.outcomeSource != null;
+      draft.outcomeSource != null ||
+      draft.finalOutcome != null ||
+      draft.finalOutcomeDate != null;
 
   if (hasAnyOutcomeField && draft.outcome24 == null) {
     errors.add('Choose the 24-hour outcome.');
   }
-  if (hasAnyOutcomeField && draft.outcomeDatetime == null) {
-    errors.add('Choose the 24-hour outcome date and time.');
-  }
   if (hasAnyOutcomeField && draft.outcomeSource == null) {
     errors.add('Choose the outcome source.');
+  }
+  if (draft.finalOutcomeDate != null && draft.finalOutcome == null) {
+    errors.add('Choose the final outcome when a final outcome date is entered.');
   }
 
   return StepValidationResult(hardErrors: errors);
